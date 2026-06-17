@@ -43,6 +43,11 @@ export function confirmPlan(planId) {
   })
 }
 
+// 导出当前方案座位表
+export function exportSeatTableUrl(planId) {
+  return 'seating/plan/' + planId + '/export-seat-table'
+}
+
 // 修改排座方案
 export function updatePlan(data) {
   return request({

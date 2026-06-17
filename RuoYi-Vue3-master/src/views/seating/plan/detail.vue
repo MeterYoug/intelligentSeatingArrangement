@@ -59,6 +59,7 @@
             <div class="section-header">
               <div class="section-title">座位表</div>
               <div class="section-actions">
+                <el-button icon="Download" @click="exportSeatTable">导出 Excel</el-button>
                 <el-button v-if="plan.planStatus !== 'ACTIVE'" type="success" icon="CircleCheck" :loading="confirming" @click="confirmCurrentPlan">确认方案</el-button>
                 <el-button type="primary" icon="Check" :loading="saving" :disabled="!dirty" @click="saveAssignments">保存调整</el-button>
               </div>
@@ -156,7 +157,7 @@
 </template>
 
 <script setup name="SeatingPlanDetail">
-import { getPlan, confirmPlan } from "@/api/seating/plan"
+import { getPlan, confirmPlan, exportSeatTableUrl } from "@/api/seating/plan"
 import { listAssignment, savePlanAssignments } from "@/api/seating/assignment"
 import { listScore } from "@/api/seating/score"
 import { getClassroomLayout } from "@/api/seating/position"
@@ -425,6 +426,15 @@ function confirmCurrentPlan() {
   }).finally(() => {
     confirming.value = false
   }).catch(() => {})
+}
+
+function exportSeatTable() {
+  if (dirty.value) {
+    proxy.$modal.msgWarning("请先保存调整后再导出")
+    return
+  }
+  const planId = route.params.planId
+  proxy.download(exportSeatTableUrl(planId), {}, `seat_plan_${planId}_${new Date().getTime()}.xlsx`)
 }
 
 function formatScoreChange(scoreChange) {
