@@ -60,6 +60,7 @@
               <div class="section-title">座位表</div>
               <div class="section-actions">
                 <el-button icon="Download" @click="exportSeatTable">导出 Excel</el-button>
+                <el-button icon="Picture" @click="exportSeatImage">导出图片</el-button>
                 <el-button v-if="plan.planStatus !== 'ACTIVE'" type="success" icon="CircleCheck" :loading="confirming" @click="confirmCurrentPlan">确认方案</el-button>
                 <el-button type="primary" icon="Check" :loading="saving" :disabled="!dirty" @click="saveAssignments">保存调整</el-button>
               </div>
@@ -435,6 +436,214 @@ function exportSeatTable() {
   }
   const planId = route.params.planId
   proxy.download(exportSeatTableUrl(planId), {}, `seat_plan_${planId}_${new Date().getTime()}.xlsx`)
+}
+
+function exportSeatImage() {
+  if (dirty.value) {
+    proxy.$modal.msgWarning("请先保存调整后再导出")
+    return
+  }
+  if (!seatRows.value.length) {
+    proxy.$modal.msgWarning("暂无座位布局可导出")
+    return
+  }
+
+  const canvas = buildSeatImageCanvas()
+  canvas.toBlob(blob => {
+    if (!blob) {
+      proxy.$modal.msgError("导出图片失败")
+      return
+    }
+    downloadBlob(blob, `seat_plan_${route.params.planId}_${new Date().getTime()}.png`)
+  }, "image/png")
+}
+
+function buildSeatImageCanvas() {
+  const scale = window.devicePixelRatio || 2
+  const padding = 32
+  const titleHeight = 84
+  const cellWidth = 148
+  const cellHeight = 92
+  const gap = 10
+  const platformGap = 12
+  const platformSize = 36
+  const rows = seatRows.value
+  const maxCols = maxColCount.value
+  const gridWidth = maxCols * cellWidth + Math.max(maxCols - 1, 0) * gap
+  const gridHeight = rows.length * cellHeight + Math.max(rows.length - 1, 0) * gap
+  const isHorizontalPlatform = ["FRONT", "BACK"].includes(platformPosition.value)
+  const isVerticalPlatform = ["LEFT", "RIGHT"].includes(platformPosition.value)
+  const width = padding * 2 + gridWidth + (isVerticalPlatform ? platformSize + platformGap : 0)
+  const height = padding * 2 + titleHeight + gridHeight + (isHorizontalPlatform ? platformSize + platformGap : 0)
+  const canvas = document.createElement("canvas")
+  canvas.width = width * scale
+  canvas.height = height * scale
+  canvas.style.width = `${width}px`
+  canvas.style.height = `${height}px`
+  const ctx = canvas.getContext("2d")
+  ctx.scale(scale, scale)
+
+  drawImageBackground(ctx, width, height)
+  drawImageHeader(ctx, padding)
+
+  const gridX = padding + (platformPosition.value === "LEFT" ? platformSize + platformGap : 0)
+  const gridY = padding + titleHeight + (platformPosition.value === "FRONT" ? platformSize + platformGap : 0)
+  drawImagePlatform(ctx, gridX, gridY, gridWidth, gridHeight, platformSize)
+  drawImageSeatGrid(ctx, rows, gridX, gridY, cellWidth, cellHeight, gap)
+  return canvas
+}
+
+function drawImageBackground(ctx, width, height) {
+  ctx.fillStyle = "#ffffff"
+  ctx.fillRect(0, 0, width, height)
+  ctx.strokeStyle = "#dcdfe6"
+  ctx.lineWidth = 1
+  ctx.strokeRect(0.5, 0.5, width - 1, height - 1)
+}
+
+function drawImageHeader(ctx, padding) {
+  ctx.fillStyle = "#303133"
+  ctx.font = "600 22px Arial, Microsoft YaHei, sans-serif"
+  drawTextWithEllipsis(ctx, plan.value.planName || "座位方案", padding, padding + 4, 520)
+
+  ctx.fillStyle = "#606266"
+  ctx.font = "14px Arial, Microsoft YaHei, sans-serif"
+  const meta = [
+    `班级：${plan.value.className || "-"}`,
+    `教室：${plan.value.classroomName || "-"}`,
+    `总评分：${plan.value.totalScore ?? "-"}`,
+    `导出时间：${parseTime(new Date(), "{y}-{m}-{d} {h}:{i}")}`
+  ].join("    ")
+  drawTextWithEllipsis(ctx, meta, padding, padding + 38, 860)
+}
+
+function drawImagePlatform(ctx, gridX, gridY, gridWidth, gridHeight, platformSize) {
+  if (platformPosition.value === "FRONT") {
+    drawPlatformRect(ctx, gridX + gridWidth / 2 - 120, gridY - platformSize - 12, 240, platformSize, "讲台")
+  } else if (platformPosition.value === "BACK") {
+    drawPlatformRect(ctx, gridX + gridWidth / 2 - 120, gridY + gridHeight + 12, 240, platformSize, "讲台")
+  } else if (platformPosition.value === "LEFT") {
+    drawPlatformRect(ctx, gridX - platformSize - 12, gridY, platformSize, gridHeight, "讲台")
+  } else if (platformPosition.value === "RIGHT") {
+    drawPlatformRect(ctx, gridX + gridWidth + 12, gridY, platformSize, gridHeight, "讲台")
+  }
+}
+
+function drawPlatformRect(ctx, x, y, width, height, text) {
+  drawRoundRect(ctx, x, y, width, height, 8, "#409eff", "#409eff")
+  ctx.fillStyle = "#ffffff"
+  ctx.font = "600 15px Arial, Microsoft YaHei, sans-serif"
+  ctx.textAlign = "center"
+  ctx.textBaseline = "middle"
+  ctx.fillText(text, x + width / 2, y + height / 2)
+  ctx.textAlign = "left"
+  ctx.textBaseline = "alphabetic"
+}
+
+function drawImageSeatGrid(ctx, rows, gridX, gridY, cellWidth, cellHeight, gap) {
+  rows.forEach((row, rowIndex) => {
+    row.forEach((seat, colIndex) => {
+      const x = gridX + colIndex * (cellWidth + gap)
+      const y = gridY + rowIndex * (cellHeight + gap)
+      drawImageSeat(ctx, seat, x, y, cellWidth, cellHeight)
+    })
+  })
+}
+
+function drawImageSeat(ctx, seat, x, y, width, height) {
+  const assignment = currentAssignment(seat)
+  const style = imageSeatStyle(seat, assignment)
+  drawRoundRect(ctx, x, y, width, height, 8, style.background, style.border)
+
+  ctx.fillStyle = style.subText
+  ctx.font = "12px Arial, Microsoft YaHei, sans-serif"
+  drawTextWithEllipsis(ctx, seat.seatCode || `${seat.rowIndex}-${seat.colIndex}`, x + 10, y + 18, width - 20)
+
+  ctx.fillStyle = style.mainText
+  ctx.font = "600 17px Arial, Microsoft YaHei, sans-serif"
+  if (seat.seatType !== "0" || seat.isAvailable !== "1") {
+    drawCenteredText(ctx, seat.seatType === "2" ? "过道" : "不可用", x, y + 6, width, height)
+    return
+  }
+  if (!assignment) {
+    drawCenteredText(ctx, "空座", x, y + 8, width, height)
+    return
+  }
+
+  const student = `${genderLabel(assignment)}  ${assignment.studentNameSnapshot || "-"}`
+  drawTextWithEllipsis(ctx, student, x + 10, y + 48, width - 20)
+  if (assignment.isLocked === "1") {
+    ctx.fillStyle = "#b88230"
+    ctx.font = "12px Arial, Microsoft YaHei, sans-serif"
+    ctx.fillText("已锁定", x + 10, y + 72)
+  }
+}
+
+function imageSeatStyle(seat, assignment) {
+  if (seat.seatType === "2") {
+    return { background: "#f4f4f5", border: "#c0c4cc", mainText: "#909399", subText: "#909399" }
+  }
+  if (seat.seatType !== "0" || seat.isAvailable !== "1") {
+    return { background: "#fef0f0", border: "#f56c6c", mainText: "#f56c6c", subText: "#f56c6c" }
+  }
+  if (!assignment) {
+    return { background: "#ffffff", border: "#dcdfe6", mainText: "#606266", subText: "#909399" }
+  }
+  if (assignment.isLocked === "1") {
+    return { background: "#fdf6ec", border: "#e6a23c", mainText: "#303133", subText: "#909399" }
+  }
+  return { background: "#ecf5ff", border: "#409eff", mainText: "#303133", subText: "#909399" }
+}
+
+function drawCenteredText(ctx, text, x, y, width, height) {
+  ctx.textAlign = "center"
+  ctx.textBaseline = "middle"
+  ctx.fillText(text, x + width / 2, y + height / 2)
+  ctx.textAlign = "left"
+  ctx.textBaseline = "alphabetic"
+}
+
+function drawTextWithEllipsis(ctx, text, x, y, maxWidth) {
+  const content = String(text || "")
+  if (ctx.measureText(content).width <= maxWidth) {
+    ctx.fillText(content, x, y)
+    return
+  }
+  let clipped = content
+  while (clipped.length > 0 && ctx.measureText(`${clipped}...`).width > maxWidth) {
+    clipped = clipped.slice(0, -1)
+  }
+  ctx.fillText(`${clipped}...`, x, y)
+}
+
+function drawRoundRect(ctx, x, y, width, height, radius, fill, stroke) {
+  const safeRadius = Math.min(radius, width / 2, height / 2)
+  ctx.beginPath()
+  ctx.moveTo(x + safeRadius, y)
+  ctx.lineTo(x + width - safeRadius, y)
+  ctx.quadraticCurveTo(x + width, y, x + width, y + safeRadius)
+  ctx.lineTo(x + width, y + height - safeRadius)
+  ctx.quadraticCurveTo(x + width, y + height, x + width - safeRadius, y + height)
+  ctx.lineTo(x + safeRadius, y + height)
+  ctx.quadraticCurveTo(x, y + height, x, y + height - safeRadius)
+  ctx.lineTo(x, y + safeRadius)
+  ctx.quadraticCurveTo(x, y, x + safeRadius, y)
+  ctx.closePath()
+  ctx.fillStyle = fill
+  ctx.fill()
+  ctx.strokeStyle = stroke
+  ctx.stroke()
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement("a")
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
 }
 
 function formatScoreChange(scoreChange) {
