@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.seating.mapper.SeatAssignmentMapper">
+    
+    <resultMap type="SeatAssignment" id="SeatAssignmentResult">
+        <result property="assignmentId"    column="assignment_id"    />
+        <result property="planId"    column="plan_id"    />
+        <result property="classId"    column="class_id"    />
+        <result property="classroomId"    column="classroom_id"    />
+        <result property="seatId"    column="seat_id"    />
+        <result property="studentId"    column="student_id"    />
+        <result property="studentNameSnapshot"    column="student_name_snapshot"    />
+        <result property="rowIndex"    column="row_index"    />
+        <result property="colIndex"    column="col_index"    />
+        <result property="isLocked"    column="is_locked"    />
+        <result property="assignSource"    column="assign_source"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectSeatAssignmentVo">
+        select assignment_id, plan_id, class_id, classroom_id, seat_id, student_id, student_name_snapshot, row_index, col_index, is_locked, assign_source, create_by, create_time, update_by, update_time, remark from seat_assignment
+    </sql>
+
+    <select id="selectSeatAssignmentList" parameterType="SeatAssignment" resultMap="SeatAssignmentResult">
+        <include refid="selectSeatAssignmentVo"/>
+        <where>  
+            <if test="planId != null "> and plan_id = #{planId}</if>
+            <if test="classId != null "> and class_id = #{classId}</if>
+            <if test="classroomId != null "> and classroom_id = #{classroomId}</if>
+            <if test="seatId != null "> and seat_id = #{seatId}</if>
+            <if test="studentId != null "> and student_id = #{studentId}</if>
+            <if test="studentNameSnapshot != null  and studentNameSnapshot != ''"> and student_name_snapshot = #{studentNameSnapshot}</if>
+            <if test="rowIndex != null "> and row_index = #{rowIndex}</if>
+            <if test="colIndex != null "> and col_index = #{colIndex}</if>
+            <if test="isLocked != null  and isLocked != ''"> and is_locked = #{isLocked}</if>
+            <if test="assignSource != null  and assignSource != ''"> and assign_source = #{assignSource}</if>
+        </where>
+    </select>
+    
+    <select id="selectSeatAssignmentByAssignmentId" parameterType="Long" resultMap="SeatAssignmentResult">
+        <include refid="selectSeatAssignmentVo"/>
+        where assignment_id = #{assignmentId}
+    </select>
+
+    <insert id="insertSeatAssignment" parameterType="SeatAssignment" useGeneratedKeys="true" keyProperty="assignmentId">
+        insert into seat_assignment
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="planId != null">plan_id,</if>
+            <if test="classId != null">class_id,</if>
+            <if test="classroomId != null">classroom_id,</if>
+            <if test="seatId != null">seat_id,</if>
+            <if test="studentId != null">student_id,</if>
+            <if test="studentNameSnapshot != null">student_name_snapshot,</if>
+            <if test="rowIndex != null">row_index,</if>
+            <if test="colIndex != null">col_index,</if>
+            <if test="isLocked != null">is_locked,</if>
+            <if test="assignSource != null">assign_source,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="planId != null">#{planId},</if>
+            <if test="classId != null">#{classId},</if>
+            <if test="classroomId != null">#{classroomId},</if>
+            <if test="seatId != null">#{seatId},</if>
+            <if test="studentId != null">#{studentId},</if>
+            <if test="studentNameSnapshot != null">#{studentNameSnapshot},</if>
+            <if test="rowIndex != null">#{rowIndex},</if>
+            <if test="colIndex != null">#{colIndex},</if>
+            <if test="isLocked != null">#{isLocked},</if>
+            <if test="assignSource != null">#{assignSource},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateSeatAssignment" parameterType="SeatAssignment">
+        update seat_assignment
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="planId != null">plan_id = #{planId},</if>
+            <if test="classId != null">class_id = #{classId},</if>
+            <if test="classroomId != null">classroom_id = #{classroomId},</if>
+            <if test="seatId != null">seat_id = #{seatId},</if>
+            <if test="studentId != null">student_id = #{studentId},</if>
+            <if test="studentNameSnapshot != null">student_name_snapshot = #{studentNameSnapshot},</if>
+            <if test="rowIndex != null">row_index = #{rowIndex},</if>
+            <if test="colIndex != null">col_index = #{colIndex},</if>
+            <if test="isLocked != null">is_locked = #{isLocked},</if>
+            <if test="assignSource != null">assign_source = #{assignSource},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where assignment_id = #{assignmentId}
+    </update>
+
+    <delete id="deleteSeatAssignmentByAssignmentId" parameterType="Long">
+        delete from seat_assignment where assignment_id = #{assignmentId}
+    </delete>
+
+    <delete id="deleteSeatAssignmentByAssignmentIds" parameterType="String">
+        delete from seat_assignment where assignment_id in 
+        <foreach item="assignmentId" collection="array" open="(" separator="," close=")">
+            #{assignmentId}
+        </foreach>
+    </delete>
+</mapper>

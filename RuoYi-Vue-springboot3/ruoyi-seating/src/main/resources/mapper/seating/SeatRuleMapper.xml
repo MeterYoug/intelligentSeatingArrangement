@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.seating.mapper.SeatRuleMapper">
+    
+    <resultMap type="SeatRule" id="SeatRuleResult">
+        <result property="ruleId"    column="rule_id"    />
+        <result property="classId"    column="class_id"    />
+        <result property="className"    column="class_name"    />
+        <result property="ruleName"    column="rule_name"    />
+        <result property="ruleCategory"    column="rule_category"    />
+        <result property="ruleCode"    column="rule_code"    />
+        <result property="ruleWeight"    column="rule_weight"    />
+        <result property="ruleConfig"    column="rule_config"    />
+        <result property="enabled"    column="enabled"    />
+        <result property="status"    column="status"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectSeatRuleVo">
+        select sr.rule_id, sr.class_id, sc.class_name, sr.rule_name, sr.rule_category,
+               sr.rule_code, sr.rule_weight, sr.rule_config, sr.enabled, sr.status,
+               sr.del_flag, sr.create_by, sr.create_time, sr.update_by, sr.update_time, sr.remark
+        from seat_rule sr
+        left join seat_class sc on sc.class_id = sr.class_id
+    </sql>
+
+    <select id="selectSeatRuleList" parameterType="SeatRule" resultMap="SeatRuleResult">
+        <include refid="selectSeatRuleVo"/>
+        <where>
+            sr.del_flag = '0' and sc.del_flag = '0'
+            <if test="classId != null "> and sr.class_id = #{classId}</if>
+            <if test="ruleName != null  and ruleName != ''"> and sr.rule_name like concat('%', #{ruleName}, '%')</if>
+            <if test="ruleCategory != null  and ruleCategory != ''"> and sr.rule_category = #{ruleCategory}</if>
+            <if test="ruleCode != null  and ruleCode != ''"> and sr.rule_code = #{ruleCode}</if>
+            <if test="ruleWeight != null "> and sr.rule_weight = #{ruleWeight}</if>
+            <if test="ruleConfig != null  and ruleConfig != ''"> and sr.rule_config = #{ruleConfig}</if>
+            <if test="enabled != null  and enabled != ''"> and sr.enabled = #{enabled}</if>
+            <if test="status != null  and status != ''"> and sr.status = #{status}</if>
+            <if test="params.teacherId != null"> and sc.teacher_id = #{params.teacherId}</if>
+        </where>
+    </select>
+    
+    <select id="selectSeatRuleByRuleId" parameterType="Long" resultMap="SeatRuleResult">
+        <include refid="selectSeatRuleVo"/>
+        where sr.rule_id = #{ruleId} and sr.del_flag = '0' and sc.del_flag = '0'
+    </select>
+
+    <insert id="insertSeatRule" parameterType="SeatRule" useGeneratedKeys="true" keyProperty="ruleId">
+        insert into seat_rule
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="classId != null">class_id,</if>
+            <if test="ruleName != null and ruleName != ''">rule_name,</if>
+            <if test="ruleCategory != null and ruleCategory != ''">rule_category,</if>
+            <if test="ruleCode != null and ruleCode != ''">rule_code,</if>
+            <if test="ruleWeight != null">rule_weight,</if>
+            <if test="ruleConfig != null">rule_config,</if>
+            <if test="enabled != null">enabled,</if>
+            <if test="status != null">status,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="classId != null">#{classId},</if>
+            <if test="ruleName != null and ruleName != ''">#{ruleName},</if>
+            <if test="ruleCategory != null and ruleCategory != ''">#{ruleCategory},</if>
+            <if test="ruleCode != null and ruleCode != ''">#{ruleCode},</if>
+            <if test="ruleWeight != null">#{ruleWeight},</if>
+            <if test="ruleConfig != null">#{ruleConfig},</if>
+            <if test="enabled != null">#{enabled},</if>
+            <if test="status != null">#{status},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateSeatRule" parameterType="SeatRule">
+        update seat_rule
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="classId != null">class_id = #{classId},</if>
+            <if test="ruleName != null and ruleName != ''">rule_name = #{ruleName},</if>
+            <if test="ruleCategory != null and ruleCategory != ''">rule_category = #{ruleCategory},</if>
+            <if test="ruleCode != null and ruleCode != ''">rule_code = #{ruleCode},</if>
+            <if test="ruleWeight != null">rule_weight = #{ruleWeight},</if>
+            <if test="ruleConfig != null">rule_config = #{ruleConfig},</if>
+            <if test="enabled != null">enabled = #{enabled},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where rule_id = #{ruleId}
+    </update>
+
+    <delete id="deleteSeatRuleByRuleId" parameterType="Long">
+        update seat_rule set del_flag = '2' where rule_id = #{ruleId}
+    </delete>
+
+    <delete id="deleteSeatRuleByRuleIds" parameterType="String">
+        update seat_rule set del_flag = '2' where rule_id in
+        <foreach item="ruleId" collection="array" open="(" separator="," close=")">
+            #{ruleId}
+        </foreach>
+    </delete>
+</mapper>

@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.seating.mapper.SeatPlanMapper">
+    
+    <resultMap type="SeatPlan" id="SeatPlanResult">
+        <result property="planId"    column="plan_id"    />
+        <result property="classId"    column="class_id"    />
+        <result property="className"    column="class_name"    />
+        <result property="classroomId"    column="classroom_id"    />
+        <result property="classroomName"    column="classroom_name"    />
+        <result property="planName"    column="plan_name"    />
+        <result property="planType"    column="plan_type"    />
+        <result property="planStatus"    column="plan_status"    />
+        <result property="totalScore"    column="total_score"    />
+        <result property="generatedAt"    column="generated_at"    />
+        <result property="activeTime"    column="active_time"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectSeatPlanVo">
+        select sp.plan_id, sp.class_id, sc.class_name, sp.classroom_id, cr.classroom_name,
+               sp.plan_name, sp.plan_type, sp.plan_status, sp.total_score, sp.generated_at,
+               sp.active_time, sp.del_flag, sp.create_by, sp.create_time, sp.update_by,
+               sp.update_time, sp.remark
+        from seat_plan sp
+        left join seat_class sc on sc.class_id = sp.class_id
+        left join seat_classroom cr on cr.classroom_id = sp.classroom_id
+    </sql>
+
+    <select id="selectSeatPlanList" parameterType="SeatPlan" resultMap="SeatPlanResult">
+        <include refid="selectSeatPlanVo"/>
+        <where>
+            sp.del_flag = '0' and sc.del_flag = '0' and cr.del_flag = '0'
+            <if test="classId != null "> and sp.class_id = #{classId}</if>
+            <if test="classroomId != null "> and sp.classroom_id = #{classroomId}</if>
+            <if test="planName != null  and planName != ''"> and sp.plan_name like concat('%', #{planName}, '%')</if>
+            <if test="planType != null  and planType != ''"> and sp.plan_type = #{planType}</if>
+            <if test="planStatus != null  and planStatus != ''"> and sp.plan_status = #{planStatus}</if>
+            <if test="totalScore != null "> and sp.total_score = #{totalScore}</if>
+            <if test="generatedAt != null "> and sp.generated_at = #{generatedAt}</if>
+            <if test="activeTime != null "> and sp.active_time = #{activeTime}</if>
+            <if test="params.teacherId != null"> and sc.teacher_id = #{params.teacherId}</if>
+        </where>
+    </select>
+    
+    <select id="selectSeatPlanByPlanId" parameterType="Long" resultMap="SeatPlanResult">
+        <include refid="selectSeatPlanVo"/>
+        where sp.plan_id = #{planId}
+          and sp.del_flag = '0' and sc.del_flag = '0' and cr.del_flag = '0'
+    </select>
+
+    <insert id="insertSeatPlan" parameterType="SeatPlan" useGeneratedKeys="true" keyProperty="planId">
+        insert into seat_plan
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="classId != null">class_id,</if>
+            <if test="classroomId != null">classroom_id,</if>
+            <if test="planName != null and planName != ''">plan_name,</if>
+            <if test="planType != null">plan_type,</if>
+            <if test="planStatus != null">plan_status,</if>
+            <if test="totalScore != null">total_score,</if>
+            <if test="generatedAt != null">generated_at,</if>
+            <if test="activeTime != null">active_time,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="classId != null">#{classId},</if>
+            <if test="classroomId != null">#{classroomId},</if>
+            <if test="planName != null and planName != ''">#{planName},</if>
+            <if test="planType != null">#{planType},</if>
+            <if test="planStatus != null">#{planStatus},</if>
+            <if test="totalScore != null">#{totalScore},</if>
+            <if test="generatedAt != null">#{generatedAt},</if>
+            <if test="activeTime != null">#{activeTime},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateSeatPlan" parameterType="SeatPlan">
+        update seat_plan
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="classId != null">class_id = #{classId},</if>
+            <if test="classroomId != null">classroom_id = #{classroomId},</if>
+            <if test="planName != null and planName != ''">plan_name = #{planName},</if>
+            <if test="planType != null">plan_type = #{planType},</if>
+            <if test="planStatus != null">plan_status = #{planStatus},</if>
+            <if test="totalScore != null">total_score = #{totalScore},</if>
+            <if test="generatedAt != null">generated_at = #{generatedAt},</if>
+            <if test="activeTime != null">active_time = #{activeTime},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where plan_id = #{planId}
+    </update>
+
+    <delete id="deleteSeatPlanByPlanId" parameterType="Long">
+        update seat_plan set del_flag = '2' where plan_id = #{planId}
+    </delete>
+
+    <delete id="deleteSeatPlanByPlanIds" parameterType="String">
+        update seat_plan set del_flag = '2' where plan_id in
+        <foreach item="planId" collection="array" open="(" separator="," close=")">
+            #{planId}
+        </foreach>
+    </delete>
+</mapper>

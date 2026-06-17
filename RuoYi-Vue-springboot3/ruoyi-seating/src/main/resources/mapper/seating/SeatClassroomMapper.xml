@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.seating.mapper.SeatClassroomMapper">
+    
+    <resultMap type="SeatClassroom" id="SeatClassroomResult">
+        <result property="classroomId"    column="classroom_id"    />
+        <result property="classId"    column="class_id"    />
+        <result property="className"    column="class_name"    />
+        <result property="classroomName"    column="classroom_name"    />
+        <result property="rowCount"    column="row_count"    />
+        <result property="colCount"    column="col_count"    />
+        <result property="platformPosition"    column="platform_position"    />
+        <result property="aisleAfterCols"    column="aisle_after_cols"    />
+        <result property="isDefault"    column="is_default"    />
+        <result property="status"    column="status"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectSeatClassroomVo">
+        select cr.classroom_id, cr.class_id, sc.class_name, cr.classroom_name, cr.row_count,
+               cr.col_count, cr.platform_position, cr.aisle_after_cols, cr.is_default,
+               cr.status, cr.del_flag, cr.create_by, cr.create_time, cr.update_by,
+               cr.update_time, cr.remark
+        from seat_classroom cr
+        left join seat_class sc on sc.class_id = cr.class_id
+    </sql>
+
+    <select id="selectSeatClassroomList" parameterType="SeatClassroom" resultMap="SeatClassroomResult">
+        <include refid="selectSeatClassroomVo"/>
+        <where>
+            cr.del_flag = '0' and sc.del_flag = '0'
+            <if test="classId != null "> and cr.class_id = #{classId}</if>
+            <if test="classroomName != null  and classroomName != ''"> and cr.classroom_name like concat('%', #{classroomName}, '%')</if>
+            <if test="rowCount != null "> and cr.row_count = #{rowCount}</if>
+            <if test="colCount != null "> and cr.col_count = #{colCount}</if>
+            <if test="platformPosition != null  and platformPosition != ''"> and cr.platform_position = #{platformPosition}</if>
+            <if test="aisleAfterCols != null  and aisleAfterCols != ''"> and cr.aisle_after_cols = #{aisleAfterCols}</if>
+            <if test="isDefault != null  and isDefault != ''"> and cr.is_default = #{isDefault}</if>
+            <if test="status != null  and status != ''"> and cr.status = #{status}</if>
+            <if test="params.teacherId != null"> and sc.teacher_id = #{params.teacherId}</if>
+        </where>
+    </select>
+    
+    <select id="selectSeatClassroomByClassroomId" parameterType="Long" resultMap="SeatClassroomResult">
+        <include refid="selectSeatClassroomVo"/>
+        where cr.classroom_id = #{classroomId} and cr.del_flag = '0' and sc.del_flag = '0'
+    </select>
+
+    <insert id="insertSeatClassroom" parameterType="SeatClassroom" useGeneratedKeys="true" keyProperty="classroomId">
+        insert into seat_classroom
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="classId != null">class_id,</if>
+            <if test="classroomName != null and classroomName != ''">classroom_name,</if>
+            <if test="rowCount != null">row_count,</if>
+            <if test="colCount != null">col_count,</if>
+            <if test="platformPosition != null">platform_position,</if>
+            <if test="aisleAfterCols != null">aisle_after_cols,</if>
+            <if test="isDefault != null">is_default,</if>
+            <if test="status != null">status,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="classId != null">#{classId},</if>
+            <if test="classroomName != null and classroomName != ''">#{classroomName},</if>
+            <if test="rowCount != null">#{rowCount},</if>
+            <if test="colCount != null">#{colCount},</if>
+            <if test="platformPosition != null">#{platformPosition},</if>
+            <if test="aisleAfterCols != null">#{aisleAfterCols},</if>
+            <if test="isDefault != null">#{isDefault},</if>
+            <if test="status != null">#{status},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateSeatClassroom" parameterType="SeatClassroom">
+        update seat_classroom
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="classId != null">class_id = #{classId},</if>
+            <if test="classroomName != null and classroomName != ''">classroom_name = #{classroomName},</if>
+            <if test="rowCount != null">row_count = #{rowCount},</if>
+            <if test="colCount != null">col_count = #{colCount},</if>
+            <if test="platformPosition != null">platform_position = #{platformPosition},</if>
+            <if test="aisleAfterCols != null">aisle_after_cols = #{aisleAfterCols},</if>
+            <if test="isDefault != null">is_default = #{isDefault},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where classroom_id = #{classroomId}
+    </update>
+
+    <delete id="deleteSeatClassroomByClassroomId" parameterType="Long">
+        update seat_classroom set del_flag = '2' where classroom_id = #{classroomId}
+    </delete>
+
+    <delete id="deleteSeatClassroomByClassroomIds" parameterType="String">
+        update seat_classroom set del_flag = '2' where classroom_id in
+        <foreach item="classroomId" collection="array" open="(" separator="," close=")">
+            #{classroomId}
+        </foreach>
+    </delete>
+</mapper>

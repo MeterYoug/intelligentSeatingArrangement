@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.seating.mapper.SeatStudentRelationMapper">
+    
+    <resultMap type="SeatStudentRelation" id="SeatStudentRelationResult">
+        <result property="relationId"    column="relation_id"    />
+        <result property="classId"    column="class_id"    />
+        <result property="studentId"    column="student_id"    />
+        <result property="relatedId"    column="related_id"    />
+        <result property="relationType"    column="relation_type"    />
+        <result property="relationWeight"    column="relation_weight"    />
+        <result property="enabled"    column="enabled"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectSeatStudentRelationVo">
+        select relation_id, class_id, student_id, related_id, relation_type, relation_weight, enabled, create_by, create_time, update_by, update_time, remark from seat_student_relation
+    </sql>
+
+    <select id="selectSeatStudentRelationList" parameterType="SeatStudentRelation" resultMap="SeatStudentRelationResult">
+        <include refid="selectSeatStudentRelationVo"/>
+        <where>  
+            <if test="classId != null "> and class_id = #{classId}</if>
+            <if test="studentId != null "> and student_id = #{studentId}</if>
+            <if test="relatedId != null "> and related_id = #{relatedId}</if>
+            <if test="relationType != null  and relationType != ''"> and relation_type = #{relationType}</if>
+            <if test="relationWeight != null "> and relation_weight = #{relationWeight}</if>
+            <if test="enabled != null  and enabled != ''"> and enabled = #{enabled}</if>
+        </where>
+    </select>
+    
+    <select id="selectSeatStudentRelationByRelationId" parameterType="Long" resultMap="SeatStudentRelationResult">
+        <include refid="selectSeatStudentRelationVo"/>
+        where relation_id = #{relationId}
+    </select>
+
+    <insert id="insertSeatStudentRelation" parameterType="SeatStudentRelation" useGeneratedKeys="true" keyProperty="relationId">
+        insert into seat_student_relation
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="classId != null">class_id,</if>
+            <if test="studentId != null">student_id,</if>
+            <if test="relatedId != null">related_id,</if>
+            <if test="relationType != null and relationType != ''">relation_type,</if>
+            <if test="relationWeight != null">relation_weight,</if>
+            <if test="enabled != null">enabled,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="classId != null">#{classId},</if>
+            <if test="studentId != null">#{studentId},</if>
+            <if test="relatedId != null">#{relatedId},</if>
+            <if test="relationType != null and relationType != ''">#{relationType},</if>
+            <if test="relationWeight != null">#{relationWeight},</if>
+            <if test="enabled != null">#{enabled},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateSeatStudentRelation" parameterType="SeatStudentRelation">
+        update seat_student_relation
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="classId != null">class_id = #{classId},</if>
+            <if test="studentId != null">student_id = #{studentId},</if>
+            <if test="relatedId != null">related_id = #{relatedId},</if>
+            <if test="relationType != null and relationType != ''">relation_type = #{relationType},</if>
+            <if test="relationWeight != null">relation_weight = #{relationWeight},</if>
+            <if test="enabled != null">enabled = #{enabled},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where relation_id = #{relationId}
+    </update>
+
+    <delete id="deleteSeatStudentRelationByRelationId" parameterType="Long">
+        delete from seat_student_relation where relation_id = #{relationId}
+    </delete>
+
+    <delete id="deleteSeatStudentRelationByRelationIds" parameterType="String">
+        delete from seat_student_relation where relation_id in 
+        <foreach item="relationId" collection="array" open="(" separator="," close=")">
+            #{relationId}
+        </foreach>
+    </delete>
+</mapper>

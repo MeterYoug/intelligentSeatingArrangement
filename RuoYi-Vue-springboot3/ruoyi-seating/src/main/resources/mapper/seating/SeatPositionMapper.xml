@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.seating.mapper.SeatPositionMapper">
+    
+    <resultMap type="SeatPosition" id="SeatPositionResult">
+        <result property="seatId"    column="seat_id"    />
+        <result property="classroomId"    column="classroom_id"    />
+        <result property="rowIndex"    column="row_index"    />
+        <result property="colIndex"    column="col_index"    />
+        <result property="seatCode"    column="seat_code"    />
+        <result property="seatType"    column="seat_type"    />
+        <result property="isAvailable"    column="is_available"    />
+        <result property="status"    column="status"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectSeatPositionVo">
+        select seat_id, classroom_id, row_index, col_index, seat_code, seat_type, is_available, status, create_by, create_time, update_by, update_time, remark from seat_position
+    </sql>
+
+    <select id="selectSeatPositionList" parameterType="SeatPosition" resultMap="SeatPositionResult">
+        <include refid="selectSeatPositionVo"/>
+        <where>  
+            <if test="classroomId != null "> and classroom_id = #{classroomId}</if>
+            <if test="rowIndex != null "> and row_index = #{rowIndex}</if>
+            <if test="colIndex != null "> and col_index = #{colIndex}</if>
+            <if test="seatCode != null  and seatCode != ''"> and seat_code = #{seatCode}</if>
+            <if test="seatType != null  and seatType != ''"> and seat_type = #{seatType}</if>
+            <if test="isAvailable != null  and isAvailable != ''"> and is_available = #{isAvailable}</if>
+            <if test="status != null  and status != ''"> and status = #{status}</if>
+        </where>
+        order by row_index asc, col_index asc
+    </select>
+    
+    <select id="selectSeatPositionBySeatId" parameterType="Long" resultMap="SeatPositionResult">
+        <include refid="selectSeatPositionVo"/>
+        where seat_id = #{seatId}
+    </select>
+
+    <insert id="insertSeatPosition" parameterType="SeatPosition" useGeneratedKeys="true" keyProperty="seatId">
+        insert into seat_position
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="classroomId != null">classroom_id,</if>
+            <if test="rowIndex != null">row_index,</if>
+            <if test="colIndex != null">col_index,</if>
+            <if test="seatCode != null">seat_code,</if>
+            <if test="seatType != null">seat_type,</if>
+            <if test="isAvailable != null">is_available,</if>
+            <if test="status != null">status,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="classroomId != null">#{classroomId},</if>
+            <if test="rowIndex != null">#{rowIndex},</if>
+            <if test="colIndex != null">#{colIndex},</if>
+            <if test="seatCode != null">#{seatCode},</if>
+            <if test="seatType != null">#{seatType},</if>
+            <if test="isAvailable != null">#{isAvailable},</if>
+            <if test="status != null">#{status},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateSeatPosition" parameterType="SeatPosition">
+        update seat_position
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="classroomId != null">classroom_id = #{classroomId},</if>
+            <if test="rowIndex != null">row_index = #{rowIndex},</if>
+            <if test="colIndex != null">col_index = #{colIndex},</if>
+            <if test="seatCode != null">seat_code = #{seatCode},</if>
+            <if test="seatType != null">seat_type = #{seatType},</if>
+            <if test="isAvailable != null">is_available = #{isAvailable},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where seat_id = #{seatId}
+    </update>
+
+    <delete id="deleteSeatPositionBySeatId" parameterType="Long">
+        delete from seat_position where seat_id = #{seatId}
+    </delete>
+
+    <delete id="deleteSeatPositionBySeatIds" parameterType="String">
+        delete from seat_position where seat_id in 
+        <foreach item="seatId" collection="array" open="(" separator="," close=")">
+            #{seatId}
+        </foreach>
+    </delete>
+
+    <delete id="deleteSeatPositionByClassroomId" parameterType="Long">
+        delete from seat_position where classroom_id = #{classroomId}
+    </delete>
+</mapper>

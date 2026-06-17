@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.seating.mapper.SeatPlanScoreMapper">
+    
+    <resultMap type="SeatPlanScore" id="SeatPlanScoreResult">
+        <result property="scoreId"    column="score_id"    />
+        <result property="planId"    column="plan_id"    />
+        <result property="ruleCode"    column="rule_code"    />
+        <result property="ruleName"    column="rule_name"    />
+        <result property="scoreValue"    column="score_value"    />
+        <result property="penaltyValue"    column="penalty_value"    />
+        <result property="detailJson"    column="detail_json"    />
+        <result property="createTime"    column="create_time"    />
+    </resultMap>
+
+    <sql id="selectSeatPlanScoreVo">
+        select score_id, plan_id, rule_code, rule_name, score_value, penalty_value, detail_json, create_time from seat_plan_score
+    </sql>
+
+    <select id="selectSeatPlanScoreList" parameterType="SeatPlanScore" resultMap="SeatPlanScoreResult">
+        <include refid="selectSeatPlanScoreVo"/>
+        <where>  
+            <if test="planId != null "> and plan_id = #{planId}</if>
+            <if test="ruleCode != null  and ruleCode != ''"> and rule_code = #{ruleCode}</if>
+            <if test="ruleName != null  and ruleName != ''"> and rule_name like concat('%', #{ruleName}, '%')</if>
+            <if test="scoreValue != null "> and score_value = #{scoreValue}</if>
+            <if test="penaltyValue != null "> and penalty_value = #{penaltyValue}</if>
+            <if test="detailJson != null  and detailJson != ''"> and detail_json = #{detailJson}</if>
+        </where>
+    </select>
+    
+    <select id="selectSeatPlanScoreByScoreId" parameterType="Long" resultMap="SeatPlanScoreResult">
+        <include refid="selectSeatPlanScoreVo"/>
+        where score_id = #{scoreId}
+    </select>
+
+    <insert id="insertSeatPlanScore" parameterType="SeatPlanScore" useGeneratedKeys="true" keyProperty="scoreId">
+        insert into seat_plan_score
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="planId != null">plan_id,</if>
+            <if test="ruleCode != null and ruleCode != ''">rule_code,</if>
+            <if test="ruleName != null">rule_name,</if>
+            <if test="scoreValue != null">score_value,</if>
+            <if test="penaltyValue != null">penalty_value,</if>
+            <if test="detailJson != null">detail_json,</if>
+            <if test="createTime != null">create_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="planId != null">#{planId},</if>
+            <if test="ruleCode != null and ruleCode != ''">#{ruleCode},</if>
+            <if test="ruleName != null">#{ruleName},</if>
+            <if test="scoreValue != null">#{scoreValue},</if>
+            <if test="penaltyValue != null">#{penaltyValue},</if>
+            <if test="detailJson != null">#{detailJson},</if>
+            <if test="createTime != null">#{createTime},</if>
+         </trim>
+    </insert>
+
+    <update id="updateSeatPlanScore" parameterType="SeatPlanScore">
+        update seat_plan_score
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="planId != null">plan_id = #{planId},</if>
+            <if test="ruleCode != null and ruleCode != ''">rule_code = #{ruleCode},</if>
+            <if test="ruleName != null">rule_name = #{ruleName},</if>
+            <if test="scoreValue != null">score_value = #{scoreValue},</if>
+            <if test="penaltyValue != null">penalty_value = #{penaltyValue},</if>
+            <if test="detailJson != null">detail_json = #{detailJson},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+        </trim>
+        where score_id = #{scoreId}
+    </update>
+
+    <delete id="deleteSeatPlanScoreByScoreId" parameterType="Long">
+        delete from seat_plan_score where score_id = #{scoreId}
+    </delete>
+
+    <delete id="deleteSeatPlanScoreByScoreIds" parameterType="String">
+        delete from seat_plan_score where score_id in 
+        <foreach item="scoreId" collection="array" open="(" separator="," close=")">
+            #{scoreId}
+        </foreach>
+    </delete>
+</mapper>

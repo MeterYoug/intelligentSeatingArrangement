@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+target/
+*.class
+*.jar
+*.war
+
+# Environment and secrets
+.env*
+RuoYi-Vue-springboot3/ruoyi-admin/src/main/resources/application.yml
+RuoYi-Vue-springboot3/ruoyi-admin/src/main/resources/application-druid.yml
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+
+# Logs
+*.log
+logs/
+
+# System files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor and IDE files
+.idea/
+.vscode/
+*.iml
+
+# Local AI/tooling state
+.codex/
+.agents/
