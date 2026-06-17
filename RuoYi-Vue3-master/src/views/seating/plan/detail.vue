@@ -61,6 +61,7 @@
               <div class="section-actions">
                 <el-button icon="Download" @click="exportSeatTable">导出 Excel</el-button>
                 <el-button icon="Picture" @click="exportSeatImage">导出图片</el-button>
+                <el-button icon="Printer" @click="exportSeatPdf">导出 PDF</el-button>
                 <el-button v-if="plan.planStatus !== 'ACTIVE'" type="success" icon="CircleCheck" :loading="confirming" @click="confirmCurrentPlan">确认方案</el-button>
                 <el-button type="primary" icon="Check" :loading="saving" :disabled="!dirty" @click="saveAssignments">保存调整</el-button>
               </div>
@@ -439,12 +440,7 @@ function exportSeatTable() {
 }
 
 function exportSeatImage() {
-  if (dirty.value) {
-    proxy.$modal.msgWarning("请先保存调整后再导出")
-    return
-  }
-  if (!seatRows.value.length) {
-    proxy.$modal.msgWarning("暂无座位布局可导出")
+  if (!canExportSnapshot()) {
     return
   }
 
@@ -456,6 +452,34 @@ function exportSeatImage() {
     }
     downloadBlob(blob, `seat_plan_${route.params.planId}_${new Date().getTime()}.png`)
   }, "image/png")
+}
+
+function exportSeatPdf() {
+  if (!canExportSnapshot()) {
+    return
+  }
+
+  const canvas = buildSeatImageCanvas()
+  const imageUrl = canvas.toDataURL("image/png")
+  const printWindow = window.open("", "_blank")
+  if (!printWindow) {
+    proxy.$modal.msgWarning("浏览器阻止了打印窗口，请允许弹窗后重试")
+    return
+  }
+  printWindow.document.write(buildPrintHtml(imageUrl))
+  printWindow.document.close()
+}
+
+function canExportSnapshot() {
+  if (dirty.value) {
+    proxy.$modal.msgWarning("请先保存调整后再导出")
+    return false
+  }
+  if (!seatRows.value.length) {
+    proxy.$modal.msgWarning("暂无座位布局可导出")
+    return false
+  }
+  return true
 }
 
 function buildSeatImageCanvas() {
@@ -644,6 +668,45 @@ function downloadBlob(blob, filename) {
   link.click()
   document.body.removeChild(link)
   URL.revokeObjectURL(url)
+}
+
+function buildPrintHtml(imageUrl) {
+  const title = escapeHtml(plan.value.planName || "座位方案")
+  return `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${title}</title>
+  <style>
+    @page { size: A4 landscape; margin: 10mm; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial, "Microsoft YaHei", sans-serif; color: #303133; background: #ffffff; }
+    .print-page { width: 100%; }
+    img { display: block; width: 100%; height: auto; }
+    @media print { body { print-color-adjust: exact; -webkit-print-color-adjust: exact; } }
+  </style>
+</head>
+<body>
+  <div class="print-page">
+    <img src="${imageUrl}" alt="${title}">
+  </div>
+  <script>
+    window.onload = function() {
+      window.focus();
+      window.print();
+    };
+  <\/script>
+</body>
+</html>`
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
 }
 
 function formatScoreChange(scoreChange) {
