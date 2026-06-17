@@ -180,6 +180,18 @@ public class SeatPlanController extends BaseController
     }
 
     /**
+     * 复制座位方案
+     */
+    @PreAuthorize("@ss.hasPermi('seating:plan:add')")
+    @Log(title = "排座方案", businessType = BusinessType.INSERT)
+    @PostMapping("/{planId}/copy")
+    public AjaxResult copy(@PathVariable("planId") Long planId)
+    {
+        SeatPlan plan = checkPlanAccess(planId);
+        return success(seatPlanService.copySeatPlan(plan, getUsername()));
+    }
+
+    /**
      * 修改排座方案
      */
     @PreAuthorize("@ss.hasPermi('seating:plan:edit')")

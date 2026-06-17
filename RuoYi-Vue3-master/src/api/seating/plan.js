@@ -43,6 +43,14 @@ export function confirmPlan(planId) {
   })
 }
 
+// 复制座位方案
+export function copyPlan(planId) {
+  return request({
+    url: '/seating/plan/' + planId + '/copy',
+    method: 'post'
+  })
+}
+
 // 导出当前方案座位表
 export function exportSeatTableUrl(planId) {
   return 'seating/plan/' + planId + '/export-seat-table'

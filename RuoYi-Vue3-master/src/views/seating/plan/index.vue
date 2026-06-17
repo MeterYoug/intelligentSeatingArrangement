@@ -71,6 +71,16 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
+          type="info"
+          plain
+          icon="CopyDocument"
+          :disabled="copyDisabled"
+          @click="handleCopy"
+          v-hasPermi="['seating:plan:add']"
+        >复制方案</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
           type="danger"
           plain
           icon="Delete"
@@ -117,7 +127,8 @@
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">查看</el-button>
-          <el-button v-if="scope.row.planStatus !== 'ACTIVE'" link type="primary" icon="CircleCheck" @click="handleConfirm(scope.row)" v-hasPermi="['seating:plan:edit']">确认</el-button>
+          <el-button v-if="scope.row.planStatus !== 'ACTIVE'" link type="primary" icon="CircleCheck" @click="handleConfirm(scope.row)" v-hasPermi="['seating:plan:edit']">{{ confirmActionText(scope.row) }}</el-button>
+          <el-button link type="primary" icon="CopyDocument" @click="handleCopy(scope.row)" v-hasPermi="['seating:plan:add']">复制</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['seating:plan:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['seating:plan:remove']">删除</el-button>
         </template>
@@ -187,7 +198,7 @@
 </template>
 
 <script setup name="Plan">
-import { listPlan, getPlan, delPlan, addPlan, generatePlan, confirmPlan, updatePlan } from "@/api/seating/plan"
+import { listPlan, getPlan, delPlan, addPlan, generatePlan, confirmPlan, copyPlan, updatePlan } from "@/api/seating/plan"
 import { listClass } from "@/api/seating/class"
 import { listClassroom } from "@/api/seating/classroom"
 
@@ -219,6 +230,7 @@ const total = ref(0)
 const title = ref("")
 const generateMode = ref(false)
 const confirmDisabled = computed(() => selectedRows.value.length !== 1 || selectedRows.value[0].planStatus === "ACTIVE")
+const copyDisabled = computed(() => selectedRows.value.length !== 1)
 
 const data = reactive({
   form: {},
@@ -342,17 +354,39 @@ function handleDetail(row) {
   router.push("/seating/plan-detail/index/" + row.planId)
 }
 
+function confirmActionText(row) {
+  return row.planStatus === "ARCHIVED" ? "恢复" : "确认"
+}
+
 /** 确认方案按钮操作 */
 function handleConfirm(row) {
   const target = row?.planId ? row : selectedRows.value[0]
   if (!target?.planId) {
     return
   }
-  proxy.$modal.confirm('确认启用方案"' + target.planName + '"？同班级原启用方案会自动归档。').then(function() {
+  const actionText = target.planStatus === "ARCHIVED" ? "恢复启用" : "启用"
+  proxy.$modal.confirm('确认' + actionText + '方案"' + target.planName + '"？同班级原启用方案会自动归档。').then(function() {
     return confirmPlan(target.planId)
   }).then(() => {
     getList()
-    proxy.$modal.msgSuccess("确认成功")
+    proxy.$modal.msgSuccess(actionText + "成功")
+  }).catch(() => {})
+}
+
+/** 复制方案按钮操作 */
+function handleCopy(row) {
+  const target = row?.planId ? row : selectedRows.value[0]
+  if (!target?.planId) {
+    return
+  }
+  proxy.$modal.confirm('确认复制方案"' + target.planName + '"？复制后会生成新的草稿方案。').then(function() {
+    return copyPlan(target.planId)
+  }).then(response => {
+    proxy.$modal.msgSuccess("复制成功")
+    getList()
+    if (response.data?.planId) {
+      router.push("/seating/plan-detail/index/" + response.data.planId)
+    }
   }).catch(() => {})
 }
 

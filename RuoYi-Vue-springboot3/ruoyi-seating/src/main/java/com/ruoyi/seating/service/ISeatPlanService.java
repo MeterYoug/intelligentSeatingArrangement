@@ -62,4 +62,6 @@ public interface ISeatPlanService
     public SeatPlan generateSeatPlan(SeatPlan seatPlan, String operName);
 
     public int confirmSeatPlan(SeatPlan seatPlan, String operName);
+
+    public SeatPlan copySeatPlan(SeatPlan seatPlan, String operName);
 }

@@ -235,6 +235,33 @@ public class SeatPlanServiceImpl implements ISeatPlanService
         return rows;
     }
 
+    @Override
+    @Transactional
+    public SeatPlan copySeatPlan(SeatPlan seatPlan, String operName)
+    {
+        if (seatPlan == null || seatPlan.getPlanId() == null)
+        {
+            throw new ServiceException("座位方案不存在");
+        }
+
+        SeatPlan copiedPlan = new SeatPlan();
+        copiedPlan.setClassId(seatPlan.getClassId());
+        copiedPlan.setClassroomId(seatPlan.getClassroomId());
+        copiedPlan.setPlanName(buildCopyPlanName(seatPlan.getPlanName()));
+        copiedPlan.setPlanType("MANUAL");
+        copiedPlan.setPlanStatus("DRAFT");
+        copiedPlan.setTotalScore(seatPlan.getTotalScore());
+        copiedPlan.setGeneratedAt(DateUtils.getNowDate());
+        copiedPlan.setDelFlag("0");
+        copiedPlan.setCreateBy(operName);
+        copiedPlan.setRemark(seatPlan.getRemark());
+        insertSeatPlan(copiedPlan);
+
+        copyAssignments(seatPlan, copiedPlan, operName);
+        copyScores(seatPlan, copiedPlan);
+        return copiedPlan;
+    }
+
     private SeatPlan buildGeneratedPlan(SeatPlan seatPlan, SeatingResult result, String operName)
     {
         SeatPlan generatedPlan = new SeatPlan();
@@ -320,6 +347,62 @@ public class SeatPlanServiceImpl implements ISeatPlanService
             score.setDetailJson(item.getDetailJson());
             score.setCreateTime(DateUtils.getNowDate());
             seatPlanScoreMapper.insertSeatPlanScore(score);
+        }
+    }
+
+    private String buildCopyPlanName(String planName)
+    {
+        String suffix = "-副本-" + DateUtils.dateTimeNow();
+        String sourceName = StringUtils.defaultIfBlank(planName, "座位方案");
+        int maxSourceLength = 64 - suffix.length();
+        if (sourceName.length() > maxSourceLength)
+        {
+            sourceName = sourceName.substring(0, maxSourceLength);
+        }
+        return sourceName + suffix;
+    }
+
+    private void copyAssignments(SeatPlan sourcePlan, SeatPlan targetPlan, String operName)
+    {
+        SeatAssignment assignmentQuery = new SeatAssignment();
+        assignmentQuery.setPlanId(sourcePlan.getPlanId());
+        List<SeatAssignment> assignments = seatAssignmentMapper.selectSeatAssignmentList(assignmentQuery);
+        for (SeatAssignment item : assignments)
+        {
+            SeatAssignment copiedAssignment = new SeatAssignment();
+            copiedAssignment.setPlanId(targetPlan.getPlanId());
+            copiedAssignment.setClassId(targetPlan.getClassId());
+            copiedAssignment.setClassroomId(targetPlan.getClassroomId());
+            copiedAssignment.setSeatId(item.getSeatId());
+            copiedAssignment.setStudentId(item.getStudentId());
+            copiedAssignment.setStudentNameSnapshot(item.getStudentNameSnapshot());
+            copiedAssignment.setRowIndex(item.getRowIndex());
+            copiedAssignment.setColIndex(item.getColIndex());
+            copiedAssignment.setIsLocked(item.getIsLocked());
+            copiedAssignment.setAssignSource(item.getAssignSource());
+            copiedAssignment.setCreateBy(operName);
+            copiedAssignment.setCreateTime(DateUtils.getNowDate());
+            copiedAssignment.setRemark(item.getRemark());
+            seatAssignmentMapper.insertSeatAssignment(copiedAssignment);
+        }
+    }
+
+    private void copyScores(SeatPlan sourcePlan, SeatPlan targetPlan)
+    {
+        SeatPlanScore scoreQuery = new SeatPlanScore();
+        scoreQuery.setPlanId(sourcePlan.getPlanId());
+        List<SeatPlanScore> scores = seatPlanScoreMapper.selectSeatPlanScoreList(scoreQuery);
+        for (SeatPlanScore item : scores)
+        {
+            SeatPlanScore copiedScore = new SeatPlanScore();
+            copiedScore.setPlanId(targetPlan.getPlanId());
+            copiedScore.setRuleCode(item.getRuleCode());
+            copiedScore.setRuleName(item.getRuleName());
+            copiedScore.setScoreValue(item.getScoreValue());
+            copiedScore.setPenaltyValue(item.getPenaltyValue());
+            copiedScore.setDetailJson(item.getDetailJson());
+            copiedScore.setCreateTime(DateUtils.getNowDate());
+            seatPlanScoreMapper.insertSeatPlanScore(copiedScore);
         }
     }
 }
