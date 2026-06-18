@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.seating.mapper.SeatStudentScoreMapper">
+
+    <resultMap type="SeatStudentScore" id="SeatStudentScoreResult">
+        <result property="scoreId" column="score_id" />
+        <result property="examId" column="exam_id" />
+        <result property="classId" column="class_id" />
+        <result property="className" column="class_name" />
+        <result property="studentId" column="student_id" />
+        <result property="studentNo" column="student_no" />
+        <result property="studentNameSnapshot" column="student_name_snapshot" />
+        <result property="subjectScores" column="subject_scores" />
+        <result property="totalScore" column="total_score" />
+        <result property="classRank" column="class_rank" />
+        <result property="scoreLevel" column="score_level" />
+        <result property="delFlag" column="del_flag" />
+        <result property="createBy" column="create_by" />
+        <result property="createTime" column="create_time" />
+        <result property="updateBy" column="update_by" />
+        <result property="updateTime" column="update_time" />
+        <result property="remark" column="remark" />
+    </resultMap>
+
+    <sql id="selectSeatStudentScoreVo">
+        select sss.score_id, sss.exam_id, sss.class_id, sc.class_name, sss.student_id,
+               sss.student_no, sss.student_name_snapshot, sss.subject_scores,
+               sss.total_score, sss.class_rank, sss.score_level, sss.del_flag,
+               sss.create_by, sss.create_time, sss.update_by, sss.update_time, sss.remark
+        from seat_student_score sss
+        left join seat_class sc on sc.class_id = sss.class_id
+    </sql>
+
+    <select id="selectSeatStudentScoreList" parameterType="SeatStudentScore" resultMap="SeatStudentScoreResult">
+        <include refid="selectSeatStudentScoreVo"/>
+        <where>
+            sss.del_flag = '0' and sc.del_flag = '0'
+            <if test="examId != null"> and sss.exam_id = #{examId}</if>
+            <if test="classId != null"> and sss.class_id = #{classId}</if>
+            <if test="studentNo != null and studentNo != ''"> and sss.student_no = #{studentNo}</if>
+            <if test="studentNameSnapshot != null and studentNameSnapshot != ''"> and sss.student_name_snapshot like concat('%', #{studentNameSnapshot}, '%')</if>
+            <if test="scoreLevel != null and scoreLevel != ''"> and sss.score_level = #{scoreLevel}</if>
+            <if test="params.teacherId != null"> and sc.teacher_id = #{params.teacherId}</if>
+        </where>
+        order by sss.class_rank is null, sss.class_rank, sss.score_id
+    </select>
+
+    <select id="selectSeatStudentScoreByScoreId" parameterType="Long" resultMap="SeatStudentScoreResult">
+        <include refid="selectSeatStudentScoreVo"/>
+        where sss.score_id = #{scoreId} and sss.del_flag = '0' and sc.del_flag = '0'
+    </select>
+
+    <select id="selectByExamIdAndStudentId" parameterType="SeatStudentScore" resultMap="SeatStudentScoreResult">
+        <include refid="selectSeatStudentScoreVo"/>
+        where sss.exam_id = #{examId} and sss.student_id = #{studentId}
+          and sss.del_flag = '0' and sc.del_flag = '0'
+        limit 1
+    </select>
+
+    <insert id="insertSeatStudentScore" parameterType="SeatStudentScore" useGeneratedKeys="true" keyProperty="scoreId">
+        insert into seat_student_score
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="examId != null">exam_id,</if>
+            <if test="classId != null">class_id,</if>
+            <if test="studentId != null">student_id,</if>
+            <if test="studentNo != null">student_no,</if>
+            <if test="studentNameSnapshot != null">student_name_snapshot,</if>
+            <if test="subjectScores != null">subject_scores,</if>
+            <if test="totalScore != null">total_score,</if>
+            <if test="classRank != null">class_rank,</if>
+            <if test="scoreLevel != null">score_level,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="examId != null">#{examId},</if>
+            <if test="classId != null">#{classId},</if>
+            <if test="studentId != null">#{studentId},</if>
+            <if test="studentNo != null">#{studentNo},</if>
+            <if test="studentNameSnapshot != null">#{studentNameSnapshot},</if>
+            <if test="subjectScores != null">#{subjectScores},</if>
+            <if test="totalScore != null">#{totalScore},</if>
+            <if test="classRank != null">#{classRank},</if>
+            <if test="scoreLevel != null">#{scoreLevel},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+
+    <update id="updateSeatStudentScore" parameterType="SeatStudentScore">
+        update seat_student_score
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="examId != null">exam_id = #{examId},</if>
+            <if test="classId != null">class_id = #{classId},</if>
+            <if test="studentId != null">student_id = #{studentId},</if>
+            <if test="studentNo != null">student_no = #{studentNo},</if>
+            <if test="studentNameSnapshot != null">student_name_snapshot = #{studentNameSnapshot},</if>
+            <if test="subjectScores != null">subject_scores = #{subjectScores},</if>
+            <if test="totalScore != null">total_score = #{totalScore},</if>
+            <if test="classRank != null">class_rank = #{classRank},</if>
+            <if test="scoreLevel != null">score_level = #{scoreLevel},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where score_id = #{scoreId}
+    </update>
+
+    <delete id="deleteSeatStudentScoreByScoreId" parameterType="Long">
+        update seat_student_score set del_flag = '2' where score_id = #{scoreId}
+    </delete>
+
+    <delete id="deleteSeatStudentScoreByScoreIds" parameterType="String">
+        update seat_student_score set del_flag = '2' where score_id in
+        <foreach item="scoreId" collection="array" open="(" separator="," close=")">
+            #{scoreId}
+        </foreach>
+    </delete>
+</mapper>

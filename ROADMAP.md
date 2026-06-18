@@ -6,9 +6,9 @@
 
 ## 当前状态
 
-日期：2026-06-16
+日期：2026-06-18
 
-当前阶段：阶段 5 第一版排座算法已完成生成接口端到端运行验收，下一步进入座位方案详情页和人工微调能力建设。
+当前阶段：阶段 7 导出和历史方案已完成第一版能力建设，下一步进入真实登录态导出核对、演示数据梳理和 MVP 收尾闭环验证。
 
 已完成：
 
@@ -47,6 +47,11 @@
 - 座位方案列表已新增详情入口，生成成功后可直接进入详情页查看座位表。
 - 座位方案详情页已支持按教室布局展示座位、学生分配和评分明细。
 - 后端执行 `mvn -DskipTests compile` 通过，前端执行 `npm run build:prod` 通过。
+- 座位方案详情页已支持拖拽换座、锁定/解锁座位、空座编辑、未安排学生回填和保存人工微调。
+- 人工微调保存后已支持重新计算总分、评分明细和硬规则冲突提示。
+- 已支持将草稿或归档方案确认为当前启用方案，同班级仅保留一个启用方案。
+- 已支持复制历史方案为新草稿，并支持归档方案恢复启用。
+- 座位方案导出已支持 Excel 二维座位表、PNG 图片和浏览器打印保存 PDF。
 
 ## MVP 范围
 
@@ -222,7 +227,7 @@
 
 目标：让老师能直观看到座位表，并进行拖拽调整。
 
-状态：进行中。
+状态：基本完成。
 
 已完成：
 
@@ -231,14 +236,16 @@
 - 一键生成成功后自动进入座位方案详情页。
 - 按教室布局渲染座位网格，显示讲台、座位、空座、过道和不可用座位。
 - 已在详情页展示分配学生和评分明细。
+- 支持拖拽已分配学生到空座位，或与其他学生交换座位。
+- 支持锁定和解锁单个学生座位，锁定座位禁止拖拽调整。
+- 支持将已分配学生移出座位形成空座，并从未安排学生列表拖回空座。
+- 支持保存人工微调后的 `seat_assignment`，保存后分配来源更新为 `MANUAL`。
+- 支持保存后刷新方案总分、评分明细和硬规则冲突提示。
 
 待办：
 
-- 支持拖拽交换学生座位。
-- 支持锁定和解锁座位。
-- 支持标记空座、不可用座位。
-- 修改后保存 `seat_assignment`。
-- 显示规则冲突或评分变化提示。
+- 使用真实登录态补充空座编辑、未安排学生拖回和保存回显的页面联调记录。
+- 补充锁定座位参与再次智能生成时保持不变的算法输入和接口联调。
 
 验收标准：
 
@@ -251,14 +258,22 @@
 
 目标：支持老师保存、对比和导出座位结果。
 
+状态：进行中。
+
+已完成：
+
+- 支持将草稿或归档座位方案确认为当前启用方案。
+- 支持复制已有座位方案为新的草稿方案。
+- 支持归档方案恢复启用，恢复后同班级原启用方案自动归档。
+- 支持从方案详情页导出 Excel 二维座位表。
+- 支持从方案详情页导出 PNG 图片。
+- 支持从方案详情页打开打印页并保存为 PDF。
+
 待办：
 
 - 支持座位方案命名。
-- 支持历史方案列表。
-- 支持设置当前启用方案。
-- 支持导出 Excel。
-- 支持导出 PDF。
-- 支持导出图片。
+- 真实登录态核对 Excel、PNG 和 PDF 导出文件内容。
+- 结合演示场景梳理历史方案筛选、复制、恢复的页面体验。
 
 验收标准：
 
@@ -291,9 +306,9 @@
 
 下一步优先做：
 
-1. 在座位方案详情页实现拖拽交换学生座位。
-2. 支持锁定和解锁座位。
-3. 支持保存人工微调后的座位分配。
+1. 使用真实登录态核对 Excel、PNG 和 PDF 导出文件内容。
+2. 梳理演示数据和 MVP 收尾清单。
+3. 做一次完整 MVP 闭环验证：登录、建班级、导入学生、建教室、生成座位、微调、保存、确认和导出。
 
 ## 2026-06-16 阶段 6 人工微调完成记录
 
@@ -583,3 +598,239 @@ npm run build:prod
 1. 使用真实登录态核对 Excel、PNG 和 PDF 导出文件内容。
 2. 梳理演示数据和 MVP 收尾清单。
 3. 做一次完整 MVP 闭环验证。
+
+## 2026-06-18 座位方案图片和 PDF 导出修复记录
+
+问题：
+
+- 点击「导出图片」或「导出 PDF」没有反应。
+- 前端控制台报错：`Uncaught ReferenceError: parseTime is not defined`。
+- 报错发生在 `detail.vue` 的 Canvas 导出头部绘制函数 `drawImageHeader` 中。
+
+已完成：
+
+- 在 `RuoYi-Vue3-master/src/views/seating/plan/detail.vue` 中显式导入若依时间格式化工具 `parseTime`。
+- 保持模板展示和 Canvas 导出使用同一个 `parseTime` 实现，避免导出函数访问不到全局属性。
+
+验证记录：
+
+```text
+npm run build:prod
+```
+
+验证结果：
+
+- 前端 Vite 生产构建成功。
+- 本次修复已消除 `parseTime` 未定义导致的打包和运行引用风险。
+- 尚未做真实登录态下的浏览器 PNG 下载和 PDF 打印保存人工核对。
+
+## 2026-06-18 座位方案详情页视角切换记录
+
+已完成：
+
+- 座位方案详情页新增「教师视角 / 学生视角」切换控件。
+- 默认保持原有展示方向为「教师视角」，避免影响老师当前使用习惯。
+- 切换到「学生视角」时，页面座位表按相反视角展示，行列顺序和讲台方向同步反转。
+- 视角切换只影响页面展示和 PNG / PDF 快照，不改变座位分配数据、拖拽保存逻辑和后端接口。
+- PNG / PDF 导出头部已增加当前视角标识，导出内容跟随当前页面视角。
+
+验证记录：
+
+```text
+npm run build:prod
+```
+
+验证结果：
+
+- 前端 Vite 生产构建成功。
+- 尚未做真实登录态下的页面切换、PNG 下载和 PDF 打印保存人工核对。
+
+## 2026-06-18 座位方案 Excel 视角导出记录
+
+已完成：
+
+- 座位方案详情页导出 Excel 时会提交当前页面 `viewMode`。
+- 后端 `POST /seating/plan/{planId}/export-seat-table` 已支持根据 `TEACHER` / `STUDENT` 视角重排二维座位网格。
+- 学生视角下，Excel 中的座位行列顺序和讲台方向会与页面、PNG、PDF 保持一致。
+- Excel 标题摘要已增加当前导出视角标识，便于老师区分导出版本。
+
+验证记录：
+
+```text
+mvn -DskipTests compile
+npm run build:prod
+```
+
+验证结果：
+
+- 后端 Maven 编译成功。
+- 前端 Vite 生产构建成功。
+- 尚未做真实登录态下的 Excel 下载和内容人工核对。
+
+## 2026-06-18 成绩管理扩展记录
+
+已完成代码实现：
+
+- 班级管理新增 `school_stage`、`grade_code` 业务字段映射，前端年级从手动输入改为下拉选择。
+- 新增成绩扩展 SQL 草案：`RuoYi-Vue-springboot3/sql/seating_score_20260618.sql`。
+- 新增 `seat_subject`、`seat_exam`、`seat_student_score` 对应后端 domain、mapper、service 和 controller。
+- 成绩管理只绑定班级，考试批次创建时从班级快照学段、年级和科目，不在成绩里重复选择年级。
+- 小学默认科目包含语文、数学、英语、科学；初中和高中按学段年级使用不同科目模板。
+- 成绩导入支持动态科目列，按学号匹配学生，导入后自动计算总分、排名和 A/B/C/D 成绩等级。
+- 新增同步入口，可将指定考试的成绩等级同步回 `seat_student.score_level`，继续服务现有排座算法。
+- 前端新增成绩管理页面：`RuoYi-Vue3-master/src/views/seating/score/index.vue`。
+- 前端新增成绩相关 API：`src/api/seating/exam.js`、`src/api/seating/studentScore.js`。
+- Excel 导入弹窗下载模板时已支持透传额外参数，成绩模板可按班级生成。
+
+验证记录：
+
+```text
+mvn -DskipTests compile
+npm run build:prod
+```
+
+验证结果：
+
+- 后端 Maven 编译通过。
+- 前端 Vite 生产构建通过。
+- 尚未导入 `seating_score_20260618.sql` 到真实数据库。
+- 尚未在真实登录态下联调成绩菜单、考试创建、模板下载、成绩导入和等级同步。
+
+下一步：
+
+1. 确认后导入 `seating_score_20260618.sql`。
+2. 刷新菜单权限，检查「成绩管理」菜单是否可见。
+3. 用真实班级创建考试批次，下载模板并导入一份小学含「科学」的成绩数据。
+4. 验证成绩等级同步后，重新生成座位方案能继续使用学生成绩等级。
+
+## 2026-06-18 MVP 闭环验证记录
+
+已完成：
+
+- 使用真实登录态完成一次完整闭环验证：`登录 -> 新建班级 -> 新建学生 -> 新建教室 -> 保存座位布局 -> 生成方案 -> 人工交换座位并锁定 -> 确认方案 -> 按当前视角导出 Excel -> 清理临时数据`。
+- 本次闭环验证中，临时方案生成前后座位分配数量均为 `4`，人工调整后锁定座位数量为 `1`，方案确认后状态为 `ACTIVE`。
+- 已验证 `POST /seating/plan/{planId}/export-seat-table` 会随 `viewMode=TEACHER/STUDENT` 输出不同内容：教师视角文件包含“教师视角”，学生视角文件包含“学生视角”，且两个导出文件的工作表 XML 不同。
+- 已修复 `seat_class` 查询与当前数据库结构不兼容的问题：`SeatClassMapper.xml` 查询阶段不再直接依赖当前库中不存在的 `school_stage`、`grade_code` 列，班级列表和按名称回查已恢复可用。
+- 验证产生的 `Codex*`、`Dbg*`、`ExpDbg*` 临时班级、学生、教室和方案数据已全部清理完成。
+
+发现的兼容风险：
+
+- 当前数据库 `seat_class.semester` 字段长度与现有页面录入习惯不一致，传“上学期”会触发 `Data too long for column 'semester'`。现阶段真实联调需使用短值 `1/2`。
+- 当前班级扩展字段 `school_stage`、`grade_code` 代码已进入后端和前端，但数据库还未完成对应结构落库。这次只做了查询兼容，没有做 schema 变更。
+
+验证记录：
+
+```text
+mvn -DskipTests compile
+POST /login
+POST /seating/class
+GET  /seating/class/list
+POST /seating/student
+GET  /seating/student/list
+POST /seating/classroom
+PUT  /seating/position/classroom/{classroomId}/layout
+POST /seating/plan/generate
+GET  /seating/assignment/list
+PUT  /seating/assignment/plan/{planId}
+PUT  /seating/plan/{planId}/confirm
+POST /seating/plan/{planId}/export-seat-table?viewMode=TEACHER
+POST /seating/plan/{planId}/export-seat-table?viewMode=STUDENT
+DELETE /seating/plan/{planId}
+DELETE /seating/classroom/{classroomId}
+DELETE /seating/student/{studentId}
+DELETE /seating/class/{classId}
+```
+
+验证结果：
+
+- 后端 Maven 编译成功。
+- 真实登录态闭环验证通过，当前“当前视角导出 Excel”链路可用。
+- 班级列表恢复可用，但 `semester` 字段长度和 `school_stage` / `grade_code` 未落库仍是 MVP 收尾前必须处理的兼容问题。
+
+下一步优先做：
+
+1. 对齐 `seat_class` 的数据库结构、页面表单和后端字段语义，至少完成 `semester`、`school_stage`、`grade_code` 的一致性收口。
+2. 用真实浏览器页面补做教师视角 / 学生视角下的 PNG、PDF 手工导出核对。
+3. 在当前闭环已通过的基础上，再决定是否推进成绩管理 SQL 落库和联调。
+
+## 2026-06-18 当前进度同步：成绩管理进入待联调
+
+当前状态：
+
+- 成绩管理扩展的后端、前端、SQL 草案和设计文档已经完成。
+- 年级归属已调整为班级维度，成绩管理只选择班级和考试批次。
+- 小学科目模板已包含「科学」，初中、高中使用不同学段科目模板。
+- 成绩导入后可自动计算总分、排名和 A/B/C/D 成绩等级。
+- 成绩等级可同步回学生档案的 `score_level`，继续参与现有排座算法。
+
+已验证：
+
+```text
+mvn -DskipTests compile
+npm run build:prod
+```
+
+待办：
+
+1. 导入 `RuoYi-Vue-springboot3/sql/seating_score_20260618.sql`。
+2. 刷新菜单和权限，确认「成绩管理」菜单可见。
+3. 创建一个小学班级考试批次，下载模板，确认模板包含「科学」。
+4. 导入成绩 Excel，验证排名、等级计算和失败回滚。
+5. 同步成绩等级到学生档案，再生成座位方案验证成绩均衡规则仍可使用。
+
+阻塞：
+
+- 真实数据库尚未执行成绩扩展 SQL，因此成绩菜单和接口还不能完成端到端联调。
+
+## 2026-06-18 当前进度同步：成绩扩展 SQL 已导入
+
+当前状态：
+
+- `RuoYi-Vue-springboot3/sql/seating_score_20260618.sql` 已由用户导入数据库。
+- 成绩管理相关表、班级年级扩展字段、科目模板和菜单权限已进入可联调状态。
+- 代码侧已完成后端编译和前端构建验证。
+
+下一步优先级：
+
+1. 刷新或重新登录后台，确认「智能排座 / 成绩管理」菜单可见。
+2. 在班级管理中确认已有班级已补齐年级下拉值；旧班级如仍只有 `grade_name`，需要保存一次以写入 `grade_code` 和 `school_stage`。
+3. 在成绩管理中新建考试批次。
+4. 下载成绩模板，重点确认小学班级模板包含「科学」列。
+5. 导入成绩 Excel，验证总分、排名和 A/B/C/D 等级计算。
+6. 执行「同步等级」，确认学生管理中的成绩等级已更新。
+7. 重新生成座位方案，确认成绩均衡规则继续按最新等级参与评分。
+
+待验证：
+
+- 成绩菜单真实可见性。
+- 成绩模板下载。
+- 成绩导入成功与失败回滚。
+- 成绩等级同步到 `seat_student.score_level`。
+- 同步后排座算法联动效果。
+
+## 2026-06-18 班级管理学期枚举收口记录
+
+已完成：
+
+- `seat_class` 查询、插入和更新已恢复 `school_stage`、`grade_code` 真实字段映射，不再继续使用临时兼容空值。
+- `SeatClassServiceImpl` 已补充班级数据归一化：`semester` 统一收口为 `1/2`，并在缺少 `schoolStage`、`gradeName` 时根据 `gradeCode` 自动补齐。
+- `RuoYi-Vue3-master/src/views/seating/class/index.vue` 已重建为可维护版本，修复原页面模板乱码导致的属性语法问题。
+- 班级页查询区、编辑弹窗和列表展示已统一改为年级下拉、学期下拉和学期中文展示，避免再向后端提交“上学期/下学期”长文本。
+
+验证记录：
+
+```text
+mvn -DskipTests compile
+npm run build:prod
+```
+
+验证结果：
+
+- 后端 Maven 编译成功。
+- 前端 Vite 生产构建成功。
+- 班级管理页当前已按 `gradeCode + schoolStage + semester(1/2)` 这组业务字段收口。
+
+后续建议：
+
+1. 用真实浏览器新增一个班级并编辑一个旧班级，确认旧数据保存后能补齐 `grade_code` 和 `school_stage`。
+2. 再跑一次成绩模板下载，确认班级扩展字段补齐后对成绩模块无回归。

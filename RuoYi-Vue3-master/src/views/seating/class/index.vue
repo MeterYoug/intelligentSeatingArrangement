@@ -9,13 +9,15 @@
           @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="年级名称" prop="gradeName">
-        <el-input
-          v-model="queryParams.gradeName"
-          placeholder="请输入年级名称"
-          clearable
-          @keyup.enter="handleQuery"
-        />
+      <el-form-item label="年级" prop="gradeCode">
+        <el-select v-model="queryParams.gradeCode" placeholder="请选择年级" clearable filterable style="width: 160px">
+          <el-option
+            v-for="item in gradeOptions"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
       </el-form-item>
       <el-form-item label="学年" prop="schoolYear">
         <el-input
@@ -26,15 +28,17 @@
         />
       </el-form-item>
       <el-form-item label="学期" prop="semester">
-        <el-input
-          v-model="queryParams.semester"
-          placeholder="请输入学期"
-          clearable
-          @keyup.enter="handleQuery"
-        />
+        <el-select v-model="queryParams.semester" placeholder="请选择学期" clearable style="width: 160px">
+          <el-option
+            v-for="item in semesterOptions"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
       </el-form-item>
       <el-form-item label="状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="班级状态" clearable style="width: 200px">
+        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 200px">
           <el-option
             v-for="dict in sys_normal_disable"
             :key="dict.value"
@@ -95,9 +99,13 @@
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="班级ID" align="center" prop="classId" />
       <el-table-column label="班级名称" align="center" prop="className" />
-      <el-table-column label="年级名称" align="center" prop="gradeName" />
+      <el-table-column label="年级" align="center" prop="gradeName" />
       <el-table-column label="学年" align="center" prop="schoolYear" />
-      <el-table-column label="学期" align="center" prop="semester" />
+      <el-table-column label="学期" align="center" prop="semester">
+        <template #default="scope">
+          <span>{{ optionLabel(semesterOptions, scope.row.semester) }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="状态" align="center" prop="status">
         <template #default="scope">
           <dict-tag :options="sys_normal_disable" :value="scope.row.status" />
@@ -111,16 +119,15 @@
         </template>
       </el-table-column>
     </el-table>
-    
+
     <pagination
-      v-show="total>0"
+      v-show="total > 0"
       :total="total"
       v-model:page="queryParams.pageNum"
       v-model:limit="queryParams.pageSize"
       @pagination="getList"
     />
 
-    <!-- 添加或修改排座班级对话框 -->
     <el-dialog :title="title" v-model="open" width="500px" append-to-body>
       <el-form ref="classRef" :model="form" :rules="rules" label-width="100px">
         <el-row>
@@ -130,8 +137,15 @@
             </el-form-item>
           </el-col>
           <el-col :span="24">
-            <el-form-item label="年级名称" prop="gradeName">
-              <el-input v-model="form.gradeName" placeholder="请输入年级名称" />
+            <el-form-item label="年级" prop="gradeCode">
+              <el-select v-model="form.gradeCode" placeholder="请选择年级" filterable style="width: 100%" @change="handleGradeChange">
+                <el-option
+                  v-for="item in gradeOptions"
+                  :key="item.value"
+                  :label="item.label"
+                  :value="item.value"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="24">
@@ -141,7 +155,14 @@
           </el-col>
           <el-col :span="24">
             <el-form-item label="学期" prop="semester">
-              <el-input v-model="form.semester" placeholder="请输入学期" />
+              <el-select v-model="form.semester" placeholder="请选择学期" style="width: 100%">
+                <el-option
+                  v-for="item in semesterOptions"
+                  :key="item.value"
+                  :label="item.label"
+                  :value="item.value"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="24">
@@ -157,15 +178,15 @@
           </el-col>
           <el-col :span="24">
             <el-form-item label="备注" prop="remark">
-              <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
+              <el-input v-model="form.remark" type="textarea" placeholder="请输入备注" />
             </el-form-item>
           </el-col>
         </el-row>
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
-          <el-button @click="cancel">取 消</el-button>
+          <el-button type="primary" @click="submitForm">确定</el-button>
+          <el-button @click="cancel">取消</el-button>
         </div>
       </template>
     </el-dialog>
@@ -188,13 +209,33 @@ const multiple = ref(true)
 const total = ref(0)
 const title = ref("")
 
+const gradeOptions = [
+  { value: "PRIMARY_1", label: "小学一年级", stage: "PRIMARY" },
+  { value: "PRIMARY_2", label: "小学二年级", stage: "PRIMARY" },
+  { value: "PRIMARY_3", label: "小学三年级", stage: "PRIMARY" },
+  { value: "PRIMARY_4", label: "小学四年级", stage: "PRIMARY" },
+  { value: "PRIMARY_5", label: "小学五年级", stage: "PRIMARY" },
+  { value: "PRIMARY_6", label: "小学六年级", stage: "PRIMARY" },
+  { value: "JUNIOR_1", label: "初中一年级", stage: "JUNIOR" },
+  { value: "JUNIOR_2", label: "初中二年级", stage: "JUNIOR" },
+  { value: "JUNIOR_3", label: "初中三年级", stage: "JUNIOR" },
+  { value: "SENIOR_1", label: "高中一年级", stage: "SENIOR" },
+  { value: "SENIOR_2", label: "高中二年级", stage: "SENIOR" },
+  { value: "SENIOR_3", label: "高中三年级", stage: "SENIOR" }
+]
+
+const semesterOptions = [
+  { value: "1", label: "上学期" },
+  { value: "2", label: "下学期" }
+]
+
 const data = reactive({
   form: {},
   queryParams: {
     pageNum: 1,
     pageSize: 10,
     className: undefined,
-    gradeName: undefined,
+    gradeCode: undefined,
     schoolYear: undefined,
     semester: undefined,
     status: undefined,
@@ -203,12 +244,14 @@ const data = reactive({
     className: [
       { required: true, message: "班级名称不能为空", trigger: "blur" }
     ],
+    gradeCode: [
+      { required: true, message: "请选择年级", trigger: "change" }
+    ],
   }
 })
 
 const { queryParams, form, rules } = toRefs(data)
 
-/** 查询排座班级列表 */
 function getList() {
   loading.value = true
   listClass(queryParams.value).then(response => {
@@ -218,18 +261,18 @@ function getList() {
   })
 }
 
-/** 取消按钮 */
 function cancel() {
   open.value = false
   reset()
 }
 
-/** 表单重置 */
 function reset() {
   form.value = {
     classId: null,
     className: null,
     gradeName: null,
+    gradeCode: null,
+    schoolStage: null,
     schoolYear: null,
     semester: null,
     status: "0",
@@ -238,11 +281,39 @@ function reset() {
   proxy.resetForm("classRef")
 }
 
+function handleGradeChange(value) {
+  const grade = gradeOptions.find(item => item.value === value)
+  form.value.gradeName = grade?.label || null
+  form.value.schoolStage = grade?.stage || null
+}
+
+function optionLabel(options, value) {
+  return options.find(item => item.value === value)?.label || value || "-"
+}
+
+function normalizeLoadedGrade() {
+  if (!form.value.gradeCode && form.value.gradeName) {
+    const grade = gradeOptions.find(item => item.label === form.value.gradeName)
+    if (grade) {
+      form.value.gradeCode = grade.value
+      form.value.schoolStage = grade.stage
+    }
+  }
+  if (form.value.semester === "上学期") {
+    form.value.semester = "1"
+  } else if (form.value.semester === "下学期") {
+    form.value.semester = "2"
+  }
+}
+
 function buildSubmitData() {
+  handleGradeChange(form.value.gradeCode)
   return {
     classId: form.value.classId,
     className: form.value.className,
     gradeName: form.value.gradeName,
+    gradeCode: form.value.gradeCode,
+    schoolStage: form.value.schoolStage,
     schoolYear: form.value.schoolYear,
     semester: form.value.semester,
     status: form.value.status,
@@ -250,79 +321,73 @@ function buildSubmitData() {
   }
 }
 
-/** 搜索按钮操作 */
 function handleQuery() {
   queryParams.value.pageNum = 1
   getList()
 }
 
-/** 重置按钮操作 */
 function resetQuery() {
   proxy.resetForm("queryRef")
   handleQuery()
 }
 
-/** 多选框选中数据 */
 function handleSelectionChange(selection) {
   ids.value = selection.map(item => item.classId)
-  single.value = selection.length != 1
+  single.value = selection.length !== 1
   multiple.value = !selection.length
 }
 
-/** 新增按钮操作 */
 function handleAdd() {
   reset()
   open.value = true
-  title.value = "添加排座班级"
+  title.value = "新增排座班级"
 }
 
-/** 修改按钮操作 */
 function handleUpdate(row) {
   reset()
-  const _classId = row.classId || ids.value
-  getClass(_classId).then(response => {
+  const classId = row.classId || ids.value
+  getClass(classId).then(response => {
     form.value = response.data
+    normalizeLoadedGrade()
     open.value = true
     title.value = "修改排座班级"
   })
 }
 
-/** 提交按钮 */
 function submitForm() {
   proxy.$refs["classRef"].validate(valid => {
-    if (valid) {
-      const submitData = buildSubmitData()
-      if (form.value.classId != null) {
-        updateClass(submitData).then(() => {
-          proxy.$modal.msgSuccess("修改成功")
-          open.value = false
-          getList()
-        })
-      } else {
-        addClass(submitData).then(() => {
-          proxy.$modal.msgSuccess("新增成功")
-          open.value = false
-          getList()
-        })
-      }
+    if (!valid) {
+      return
+    }
+    const submitData = buildSubmitData()
+    if (form.value.classId != null) {
+      updateClass(submitData).then(() => {
+        proxy.$modal.msgSuccess("修改成功")
+        open.value = false
+        getList()
+      })
+    } else {
+      addClass(submitData).then(() => {
+        proxy.$modal.msgSuccess("新增成功")
+        open.value = false
+        getList()
+      })
     }
   })
 }
 
-/** 删除按钮操作 */
 function handleDelete(row) {
-  const _classIds = row.classId || ids.value
-  proxy.$modal.confirm('是否确认删除排座班级编号为"' + _classIds + '"的数据项？').then(function() {
-    return delClass(_classIds)
+  const classIds = row.classId || ids.value
+  proxy.$modal.confirm(`是否确认删除班级编号为“${classIds}”的数据项？`).then(function() {
+    return delClass(classIds)
   }).then(() => {
     getList()
     proxy.$modal.msgSuccess("删除成功")
   }).catch(() => {})
 }
 
-/** 导出按钮操作 */
 function handleExport() {
-  proxy.download('seating/class/export', {
+  proxy.download("seating/class/export", {
     ...queryParams.value
   }, `class_${new Date().getTime()}.xlsx`)
 }

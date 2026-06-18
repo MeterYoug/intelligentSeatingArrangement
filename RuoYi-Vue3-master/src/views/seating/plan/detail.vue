@@ -59,6 +59,10 @@
             <div class="section-header">
               <div class="section-title">座位表</div>
               <div class="section-actions">
+                <el-radio-group v-model="viewMode" size="small" class="view-toggle">
+                  <el-radio-button label="TEACHER">教师视角</el-radio-button>
+                  <el-radio-button label="STUDENT">学生视角</el-radio-button>
+                </el-radio-group>
                 <el-button icon="Download" @click="exportSeatTable">导出 Excel</el-button>
                 <el-button icon="Picture" @click="exportSeatImage">导出图片</el-button>
                 <el-button icon="Printer" @click="exportSeatPdf">导出 PDF</el-button>
@@ -68,12 +72,12 @@
             </div>
             <div class="classroom-view">
               <div class="classroom-body">
-                <div v-if="platformPosition === 'LEFT'" class="platform platform-vertical">讲台</div>
+                <div v-if="viewPlatformPosition === 'LEFT'" class="platform platform-vertical">讲台</div>
                 <div class="classroom-main">
-                  <div v-if="platformPosition === 'FRONT'" class="platform platform-horizontal">讲台</div>
+                  <div v-if="viewPlatformPosition === 'FRONT'" class="platform platform-horizontal">讲台</div>
                   <div class="seat-grid" :style="gridStyle">
                     <div
-                      v-for="seat in flatSeats"
+                      v-for="seat in displayFlatSeats"
                       :key="seat.rowIndex + '-' + seat.colIndex"
                       class="seat-cell"
                       :class="seatClass(seat)"
@@ -117,9 +121,9 @@
                       </template>
                     </div>
                   </div>
-                  <div v-if="platformPosition === 'BACK'" class="platform platform-horizontal">讲台</div>
+                  <div v-if="viewPlatformPosition === 'BACK'" class="platform platform-horizontal">讲台</div>
                 </div>
-                <div v-if="platformPosition === 'RIGHT'" class="platform platform-vertical">讲台</div>
+                <div v-if="viewPlatformPosition === 'RIGHT'" class="platform platform-vertical">讲台</div>
               </div>
             </div>
           </section>
@@ -164,6 +168,7 @@ import { listAssignment, savePlanAssignments } from "@/api/seating/assignment"
 import { listScore } from "@/api/seating/score"
 import { getClassroomLayout } from "@/api/seating/position"
 import { listStudent } from "@/api/seating/student"
+import { parseTime } from "@/utils/ruoyi"
 
 const route = useRoute()
 const router = useRouter()
@@ -187,6 +192,7 @@ const assignmentList = ref([])
 const scoreList = ref([])
 const adjustResult = ref(null)
 const studentList = ref([])
+const viewMode = ref("TEACHER")
 
 const assignmentMap = computed(() => {
   const map = new Map()
@@ -207,11 +213,20 @@ const studentMap = computed(() => {
 const assignedStudentIds = computed(() => new Set(assignmentList.value.map(item => item.studentId)))
 const unassignedStudents = computed(() => studentList.value.filter(item => item.status === "0" && !assignedStudentIds.value.has(item.studentId)))
 const flatSeats = computed(() => seatRows.value.flat())
-const maxColCount = computed(() => seatRows.value.reduce((max, row) => Math.max(max, row.length), 1))
+const displaySeatRows = computed(() => {
+  if (viewMode.value === "STUDENT") {
+    return seatRows.value.slice().reverse().map(row => row.slice().reverse())
+  }
+  return seatRows.value
+})
+const displayFlatSeats = computed(() => displaySeatRows.value.flat())
+const maxColCount = computed(() => displaySeatRows.value.reduce((max, row) => Math.max(max, row.length), 1))
 const gridStyle = computed(() => ({
   gridTemplateColumns: `repeat(${maxColCount.value}, minmax(88px, 112px))`
 }))
 const platformPosition = computed(() => plan.value.platformPosition || "FRONT")
+const viewPlatformPosition = computed(() => viewMode.value === "STUDENT" ? reversePlatformPosition(platformPosition.value) : platformPosition.value)
+const viewModeLabel = computed(() => viewMode.value === "STUDENT" ? "学生视角" : "教师视角")
 
 function optionLabel(options, value) {
   return options.find(item => item.value === value)?.label || "-"
@@ -219,6 +234,16 @@ function optionLabel(options, value) {
 
 function goBack() {
   router.push("/seating/plan")
+}
+
+function reversePlatformPosition(position) {
+  const reverseMap = {
+    FRONT: "BACK",
+    BACK: "FRONT",
+    LEFT: "RIGHT",
+    RIGHT: "LEFT"
+  }
+  return reverseMap[position] || "FRONT"
 }
 
 function seatClass(seat) {
@@ -436,7 +461,7 @@ function exportSeatTable() {
     return
   }
   const planId = route.params.planId
-  proxy.download(exportSeatTableUrl(planId), {}, `seat_plan_${planId}_${new Date().getTime()}.xlsx`)
+  proxy.download(exportSeatTableUrl(planId), { viewMode: viewMode.value }, `seat_plan_${planId}_${new Date().getTime()}.xlsx`)
 }
 
 function exportSeatImage() {
@@ -491,12 +516,13 @@ function buildSeatImageCanvas() {
   const gap = 10
   const platformGap = 12
   const platformSize = 36
-  const rows = seatRows.value
+  const rows = displaySeatRows.value
   const maxCols = maxColCount.value
   const gridWidth = maxCols * cellWidth + Math.max(maxCols - 1, 0) * gap
   const gridHeight = rows.length * cellHeight + Math.max(rows.length - 1, 0) * gap
-  const isHorizontalPlatform = ["FRONT", "BACK"].includes(platformPosition.value)
-  const isVerticalPlatform = ["LEFT", "RIGHT"].includes(platformPosition.value)
+  const platform = viewPlatformPosition.value
+  const isHorizontalPlatform = ["FRONT", "BACK"].includes(platform)
+  const isVerticalPlatform = ["LEFT", "RIGHT"].includes(platform)
   const width = padding * 2 + gridWidth + (isVerticalPlatform ? platformSize + platformGap : 0)
   const height = padding * 2 + titleHeight + gridHeight + (isHorizontalPlatform ? platformSize + platformGap : 0)
   const canvas = document.createElement("canvas")
@@ -510,8 +536,8 @@ function buildSeatImageCanvas() {
   drawImageBackground(ctx, width, height)
   drawImageHeader(ctx, padding)
 
-  const gridX = padding + (platformPosition.value === "LEFT" ? platformSize + platformGap : 0)
-  const gridY = padding + titleHeight + (platformPosition.value === "FRONT" ? platformSize + platformGap : 0)
+  const gridX = padding + (platform === "LEFT" ? platformSize + platformGap : 0)
+  const gridY = padding + titleHeight + (platform === "FRONT" ? platformSize + platformGap : 0)
   drawImagePlatform(ctx, gridX, gridY, gridWidth, gridHeight, platformSize)
   drawImageSeatGrid(ctx, rows, gridX, gridY, cellWidth, cellHeight, gap)
   return canvas
@@ -535,6 +561,7 @@ function drawImageHeader(ctx, padding) {
   const meta = [
     `班级：${plan.value.className || "-"}`,
     `教室：${plan.value.classroomName || "-"}`,
+    `视角：${viewModeLabel.value}`,
     `总评分：${plan.value.totalScore ?? "-"}`,
     `导出时间：${parseTime(new Date(), "{y}-{m}-{d} {h}:{i}")}`
   ].join("    ")
@@ -542,13 +569,13 @@ function drawImageHeader(ctx, padding) {
 }
 
 function drawImagePlatform(ctx, gridX, gridY, gridWidth, gridHeight, platformSize) {
-  if (platformPosition.value === "FRONT") {
+  if (viewPlatformPosition.value === "FRONT") {
     drawPlatformRect(ctx, gridX + gridWidth / 2 - 120, gridY - platformSize - 12, 240, platformSize, "讲台")
-  } else if (platformPosition.value === "BACK") {
+  } else if (viewPlatformPosition.value === "BACK") {
     drawPlatformRect(ctx, gridX + gridWidth / 2 - 120, gridY + gridHeight + 12, 240, platformSize, "讲台")
-  } else if (platformPosition.value === "LEFT") {
+  } else if (viewPlatformPosition.value === "LEFT") {
     drawPlatformRect(ctx, gridX - platformSize - 12, gridY, platformSize, gridHeight, "讲台")
-  } else if (platformPosition.value === "RIGHT") {
+  } else if (viewPlatformPosition.value === "RIGHT") {
     drawPlatformRect(ctx, gridX + gridWidth + 12, gridY, platformSize, gridHeight, "讲台")
   }
 }
@@ -866,8 +893,13 @@ loadDetail()
 .section-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   flex: 0 0 auto;
+}
+
+.view-toggle {
+  margin-right: 4px;
 }
 
 .classroom-view {

@@ -107,7 +107,7 @@ public class SeatPlanController extends BaseController
     @PreAuthorize("@ss.hasPermi('seating:plan:export')")
     @Log(title = "座位表", businessType = BusinessType.EXPORT)
     @PostMapping("/{planId}/export-seat-table")
-    public void exportSeatTable(HttpServletResponse response, @PathVariable("planId") Long planId)
+    public void exportSeatTable(HttpServletResponse response, @PathVariable("planId") Long planId, String viewMode)
     {
         SeatPlan plan = checkPlanAccess(planId);
         SeatPosition positionQuery = new SeatPosition();
@@ -128,7 +128,7 @@ public class SeatPlanController extends BaseController
         }
 
         SeatClassroom classroom = seatClassroomService.selectSeatClassroomByClassroomId(plan.getClassroomId());
-        exportSeatGridExcel(response, plan, classroom, positions, assignmentMap);
+        exportSeatGridExcel(response, plan, classroom, positions, assignmentMap, normalizeViewMode(viewMode));
     }
 
     /**
@@ -303,12 +303,16 @@ public class SeatPlanController extends BaseController
     }
 
     private void exportSeatGridExcel(HttpServletResponse response, SeatPlan plan, SeatClassroom classroom,
-            List<SeatPosition> positions, Map<Long, SeatAssignment> assignmentMap)
+            List<SeatPosition> positions, Map<Long, SeatAssignment> assignmentMap, String viewMode)
     {
         int maxRow = positions.stream().mapToInt(item -> item.getRowIndex().intValue()).max().orElse(1);
         int maxCol = positions.stream().mapToInt(item -> item.getColIndex().intValue()).max().orElse(1);
         String platformPosition = classroom == null || classroom.getPlatformPosition() == null
                 ? "FRONT" : classroom.getPlatformPosition();
+        if (isStudentView(viewMode))
+        {
+            platformPosition = reversePlatformPosition(platformPosition);
+        }
         boolean leftPlatform = "LEFT".equals(platformPosition);
         boolean rightPlatform = "RIGHT".equals(platformPosition);
         int gridColOffset = leftPlatform ? 1 : 0;
@@ -326,7 +330,7 @@ public class SeatPlanController extends BaseController
         {
             Sheet sheet = workbook.createSheet("座位表");
             Map<String, CellStyle> styles = createSeatGridStyles(workbook);
-            writeSeatGridTitle(sheet, styles, plan, totalCols);
+            writeSeatGridTitle(sheet, styles, plan, totalCols, viewMode);
             if ("FRONT".equals(platformPosition))
             {
                 writeMergedCell(sheet, 2, 0, 2, totalCols - 1, "讲台", styles.get("platform"));
@@ -346,7 +350,9 @@ public class SeatPlanController extends BaseController
                 row.setHeightInPoints(54);
                 for (int colIndex = 1; colIndex <= maxCol; colIndex++)
                 {
-                    SeatPosition position = positionMap.get(rowIndex + "-" + colIndex);
+                    int sourceRowIndex = isStudentView(viewMode) ? maxRow - rowIndex + 1 : rowIndex;
+                    int sourceColIndex = isStudentView(viewMode) ? maxCol - colIndex + 1 : colIndex;
+                    SeatPosition position = positionMap.get(sourceRowIndex + "-" + sourceColIndex);
                     Cell cell = row.createCell(gridColOffset + colIndex - 1);
                     if (position == null)
                     {
@@ -387,12 +393,49 @@ public class SeatPlanController extends BaseController
         }
     }
 
-    private void writeSeatGridTitle(Sheet sheet, Map<String, CellStyle> styles, SeatPlan plan, int totalCols)
+    private void writeSeatGridTitle(Sheet sheet, Map<String, CellStyle> styles, SeatPlan plan, int totalCols, String viewMode)
     {
         writeMergedCell(sheet, 0, 0, 0, totalCols - 1, plan.getPlanName(), styles.get("title"));
         String summary = "班级：" + defaultText(plan.getClassName()) + "    教室：" + defaultText(plan.getClassroomName())
+                + "    视角：" + resolveViewModeLabel(viewMode)
                 + "    总评分：" + (plan.getTotalScore() == null ? "-" : plan.getTotalScore());
         writeMergedCell(sheet, 1, 0, 1, totalCols - 1, summary, styles.get("meta"));
+    }
+
+    private String normalizeViewMode(String viewMode)
+    {
+        return "STUDENT".equalsIgnoreCase(viewMode) ? "STUDENT" : "TEACHER";
+    }
+
+    private boolean isStudentView(String viewMode)
+    {
+        return "STUDENT".equals(viewMode);
+    }
+
+    private String reversePlatformPosition(String platformPosition)
+    {
+        if ("FRONT".equals(platformPosition))
+        {
+            return "BACK";
+        }
+        if ("BACK".equals(platformPosition))
+        {
+            return "FRONT";
+        }
+        if ("LEFT".equals(platformPosition))
+        {
+            return "RIGHT";
+        }
+        if ("RIGHT".equals(platformPosition))
+        {
+            return "LEFT";
+        }
+        return "FRONT";
+    }
+
+    private String resolveViewModeLabel(String viewMode)
+    {
+        return isStudentView(viewMode) ? "学生视角" : "教师视角";
     }
 
     private void writeMergedCell(Sheet sheet, int firstRow, int firstCol, int lastRow, int lastCol, String value, CellStyle style)

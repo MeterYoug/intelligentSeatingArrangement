@@ -1,6 +1,7 @@
 package com.ruoyi.seating.mapper;
 
 import java.util.List;
+import org.apache.ibatis.annotations.Param;
 import com.ruoyi.seating.domain.SeatStudent;
 
 /**
@@ -44,6 +45,10 @@ public interface SeatStudentMapper
      * @return 结果
      */
     public int updateSeatStudent(SeatStudent seatStudent);
+
+    public int updateStudentScoreLevel(@Param("studentId") Long studentId,
+            @Param("scoreLevel") String scoreLevel,
+            @Param("updateBy") String updateBy);
 
     /**
      * 删除排座学生

@@ -26,6 +26,12 @@ public class SeatClass extends BaseEntity
     @Excel(name = "年级名称")
     private String gradeName;
 
+    /** School stage: PRIMARY/JUNIOR/SENIOR */
+    private String schoolStage;
+
+    /** Stable grade code, such as PRIMARY_4 */
+    private String gradeCode;
+
     /** 学年 */
     @Excel(name = "学年")
     private String schoolYear;
@@ -77,6 +83,26 @@ public class SeatClass extends BaseEntity
     public String getGradeName() 
     {
         return gradeName;
+    }
+
+    public void setSchoolStage(String schoolStage)
+    {
+        this.schoolStage = schoolStage;
+    }
+
+    public String getSchoolStage()
+    {
+        return schoolStage;
+    }
+
+    public void setGradeCode(String gradeCode)
+    {
+        this.gradeCode = gradeCode;
+    }
+
+    public String getGradeCode()
+    {
+        return gradeCode;
     }
 
     public void setSchoolYear(String schoolYear) 
@@ -145,6 +171,8 @@ public class SeatClass extends BaseEntity
             .append("classId", getClassId())
             .append("className", getClassName())
             .append("gradeName", getGradeName())
+            .append("schoolStage", getSchoolStage())
+            .append("gradeCode", getGradeCode())
             .append("schoolYear", getSchoolYear())
             .append("semester", getSemester())
             .append("teacherId", getTeacherId())

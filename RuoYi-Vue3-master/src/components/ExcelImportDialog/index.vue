@@ -103,7 +103,7 @@ function handleClose() {
 
 // 下载模板
 function handleDownloadTemplate() {
-  proxy.download(props.templateAction, {}, `${props.templateFileName}_${new Date().getTime()}.xlsx`)
+  proxy.download(props.templateAction, { ...props.extraParams }, `${props.templateFileName}_${new Date().getTime()}.xlsx`)
 }
 
 // 上传进度
