@@ -61,6 +61,13 @@
           >设为当前</el-button>
         </template>
       </el-table-column>
+      <template #empty>
+        <seating-table-empty-state
+          :description="listEmptyDescription"
+          :action-text="listEmptyActionText"
+          @action="handleListEmptyAction"
+        />
+      </template>
     </el-table>
 
     <el-dialog :title="title" v-model="open" width="520px" append-to-body>
@@ -105,6 +112,7 @@ const router = useRouter()
 const classOptions = ref([])
 const examList = ref([])
 const loading = ref(false)
+const listError = ref(false)
 const showSearch = ref(true)
 const open = ref(false)
 const title = ref("")
@@ -124,6 +132,20 @@ const data = reactive({
 
 const { queryParams, form, rules } = toRefs(data)
 
+const hasActiveFilters = computed(() => Object.values(queryParams.value).some(value => value !== undefined && value !== null && value !== ""))
+const listEmptyDescription = computed(() => listError.value ? "考试列表加载失败，请检查网络后重试。" : hasActiveFilters.value ? "没有找到符合条件的考试。" : "暂无考试，请先新增考试。")
+const listEmptyActionText = computed(() => listError.value ? "重新加载" : hasActiveFilters.value ? "重置筛选" : "新增考试")
+
+function handleListEmptyAction() {
+  if (listError.value) {
+    getList()
+  } else if (hasActiveFilters.value) {
+    resetQuery()
+  } else {
+    handleAddExam()
+  }
+}
+
 function getClassOptions() {
   return listClass({ status: "0" }).then(response => {
     classOptions.value = response.rows
@@ -132,10 +154,13 @@ function getClassOptions() {
 
 function getList() {
   loading.value = true
+  listError.value = false
   listExam({ ...queryParams.value, status: "0" }).then(response => {
     examList.value = response.rows
-    loading.value = false
   }).catch(() => {
+    examList.value = []
+    listError.value = true
+  }).finally(() => {
     loading.value = false
   })
 }

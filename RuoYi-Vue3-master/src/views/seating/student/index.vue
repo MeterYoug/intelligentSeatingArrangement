@@ -172,6 +172,13 @@
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['seating:student:remove']">删除</el-button>
         </template>
       </el-table-column>
+      <template #empty>
+        <seating-table-empty-state
+          :description="listEmptyDescription"
+          :action-text="listEmptyActionText"
+          @action="handleListEmptyAction"
+        />
+      </template>
     </el-table>
     
     <pagination
@@ -358,6 +365,7 @@ const classOptions = ref([])
 const open = ref(false)
 const importClassId = ref(null)
 const loading = ref(true)
+const listError = ref(false)
 const showSearch = ref(true)
 const ids = ref([])
 const single = ref(true)
@@ -394,12 +402,32 @@ const data = reactive({
 
 const { queryParams, form, rules } = toRefs(data)
 
+const hasActiveFilters = computed(() => Object.entries(queryParams.value).some(([key, value]) => !["pageNum", "pageSize"].includes(key) && value !== undefined && value !== null && value !== ""))
+const listEmptyDescription = computed(() => listError.value ? "学生列表加载失败，请检查网络后重试。" : hasActiveFilters.value ? "没有找到符合条件的学生。" : "暂无学生，请先新增或导入学生。")
+const listEmptyActionText = computed(() => listError.value ? "重新加载" : hasActiveFilters.value ? "重置筛选" : "新增学生")
+
+function handleListEmptyAction() {
+  if (listError.value) {
+    getList()
+  } else if (hasActiveFilters.value) {
+    resetQuery()
+  } else {
+    handleAdd()
+  }
+}
+
 /** 查询排座学生列表 */
 function getList() {
   loading.value = true
+  listError.value = false
   listStudent(queryParams.value).then(response => {
     studentList.value = response.rows
     total.value = response.total
+  }).catch(() => {
+    studentList.value = []
+    total.value = 0
+    listError.value = true
+  }).finally(() => {
     loading.value = false
   })
 }

@@ -6,7 +6,19 @@
       </template>
     </el-page-header>
 
-    <el-skeleton :loading="loading" animated>
+    <el-result
+      v-if="loadError"
+      icon="error"
+      title="座位方案加载失败"
+      sub-title="方案不存在、没有访问权限或关联数据暂时不可用，请重试。"
+    >
+      <template #extra>
+        <el-button type="primary" @click="loadDetail">重新加载</el-button>
+        <el-button @click="goBack">返回方案列表</el-button>
+      </template>
+    </el-result>
+
+    <el-skeleton v-else :loading="loading" animated>
       <template #template>
         <el-skeleton-item variant="p" style="width: 30%" />
         <el-skeleton-item variant="rect" style="height: 360px; margin-top: 16px" />
@@ -181,6 +193,7 @@ const statusOptions = [
 ]
 
 const loading = ref(true)
+const loadError = ref(false)
 const saving = ref(false)
 const confirming = ref(false)
 const dirty = ref(false)
@@ -810,6 +823,7 @@ function scoreDetailLabel(key) {
 
 function loadDetail() {
   loading.value = true
+  loadError.value = false
   const planId = route.params.planId
   getPlan(planId).then(response => {
     plan.value = response.data || {}
@@ -825,6 +839,8 @@ function loadDetail() {
     scoreList.value = scoreResponse.rows || []
     studentList.value = studentResponse.rows || []
     dirty.value = false
+  }).catch(() => {
+    loadError.value = true
   }).finally(() => {
     loading.value = false
   })

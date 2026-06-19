@@ -133,6 +133,13 @@
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['seating:plan:remove']">删除</el-button>
         </template>
       </el-table-column>
+      <template #empty>
+        <seating-table-empty-state
+          :description="listEmptyDescription"
+          :action-text="listEmptyActionText"
+          @action="handleListEmptyAction"
+        />
+      </template>
     </el-table>
     
     <pagination
@@ -221,6 +228,7 @@ const classroomOptions = ref([])
 const formClassroomOptions = computed(() => classroomOptions.value.filter(item => item.classId === form.value.classId))
 const open = ref(false)
 const loading = ref(true)
+const listError = ref(false)
 const showSearch = ref(true)
 const ids = ref([])
 const selectedRows = ref([])
@@ -262,12 +270,32 @@ const data = reactive({
 
 const { queryParams, form, rules } = toRefs(data)
 
+const hasActiveFilters = computed(() => Object.entries(queryParams.value).some(([key, value]) => !["pageNum", "pageSize"].includes(key) && value !== undefined && value !== null && value !== ""))
+const listEmptyDescription = computed(() => listError.value ? "座位方案列表加载失败，请检查网络后重试。" : hasActiveFilters.value ? "没有找到符合条件的座位方案。" : "暂无座位方案，请先新增或智能生成方案。")
+const listEmptyActionText = computed(() => listError.value ? "重新加载" : hasActiveFilters.value ? "重置筛选" : "新增方案")
+
+function handleListEmptyAction() {
+  if (listError.value) {
+    getList()
+  } else if (hasActiveFilters.value) {
+    resetQuery()
+  } else {
+    handleAdd()
+  }
+}
+
 /** 查询排座方案列表 */
 function getList() {
   loading.value = true
+  listError.value = false
   listPlan(queryParams.value).then(response => {
     planList.value = response.rows
     total.value = response.total
+  }).catch(() => {
+    planList.value = []
+    total.value = 0
+    listError.value = true
+  }).finally(() => {
     loading.value = false
   })
 }

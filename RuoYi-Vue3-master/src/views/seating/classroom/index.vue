@@ -95,6 +95,13 @@
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['seating:classroom:remove']">删除</el-button>
         </template>
       </el-table-column>
+      <template #empty>
+        <seating-table-empty-state
+          :description="listEmptyDescription"
+          :action-text="listEmptyActionText"
+          @action="handleListEmptyAction"
+        />
+      </template>
     </el-table>
     
     <pagination
@@ -222,6 +229,7 @@ const classOptions = ref([])
 const layoutGrid = ref([])
 const open = ref(false)
 const loading = ref(true)
+const listError = ref(false)
 const showSearch = ref(true)
 const ids = ref([])
 const single = ref(true)
@@ -278,12 +286,32 @@ const data = reactive({
 
 const { queryParams, form, rules } = toRefs(data)
 
+const hasActiveFilters = computed(() => Object.entries(queryParams.value).some(([key, value]) => !["pageNum", "pageSize"].includes(key) && value !== undefined && value !== null && value !== ""))
+const listEmptyDescription = computed(() => listError.value ? "教室布局列表加载失败，请检查网络后重试。" : hasActiveFilters.value ? "没有找到符合条件的教室布局。" : "暂无教室布局，请先新增教室布局。")
+const listEmptyActionText = computed(() => listError.value ? "重新加载" : hasActiveFilters.value ? "重置筛选" : "新增教室布局")
+
+function handleListEmptyAction() {
+  if (listError.value) {
+    getList()
+  } else if (hasActiveFilters.value) {
+    resetQuery()
+  } else {
+    handleAdd()
+  }
+}
+
 /** 查询排座教室布局列表 */
 function getList() {
   loading.value = true
+  listError.value = false
   listClassroom(queryParams.value).then(response => {
     classroomList.value = response.rows
     total.value = response.total
+  }).catch(() => {
+    classroomList.value = []
+    total.value = 0
+    listError.value = true
+  }).finally(() => {
     loading.value = false
   })
 }

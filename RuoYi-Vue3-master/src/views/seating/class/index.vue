@@ -127,6 +127,13 @@
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['seating:class:remove']">删除</el-button>
         </template>
       </el-table-column>
+      <template #empty>
+        <seating-table-empty-state
+          :description="listEmptyDescription"
+          :action-text="listEmptyActionText"
+          @action="handleListEmptyAction"
+        />
+      </template>
     </el-table>
 
     <pagination
@@ -223,6 +230,7 @@ const { sys_normal_disable } = proxy.useDict("sys_normal_disable")
 const classList = ref([])
 const open = ref(false)
 const loading = ref(true)
+const listError = ref(false)
 const showSearch = ref(true)
 const ids = ref([])
 const single = ref(true)
@@ -282,11 +290,31 @@ const data = reactive({
 
 const { queryParams, form, rules } = toRefs(data)
 
+const hasActiveFilters = computed(() => Object.entries(queryParams.value).some(([key, value]) => !["pageNum", "pageSize"].includes(key) && value !== undefined && value !== null && value !== ""))
+const listEmptyDescription = computed(() => listError.value ? "班级列表加载失败，请检查网络后重试。" : hasActiveFilters.value ? "没有找到符合条件的班级。" : "暂无班级，请先新增班级。")
+const listEmptyActionText = computed(() => listError.value ? "重新加载" : hasActiveFilters.value ? "重置筛选" : "新增班级")
+
+function handleListEmptyAction() {
+  if (listError.value) {
+    getList()
+  } else if (hasActiveFilters.value) {
+    resetQuery()
+  } else {
+    handleAdd()
+  }
+}
+
 function getList() {
   loading.value = true
+  listError.value = false
   listClass(queryParams.value).then(response => {
     classList.value = response.rows
     total.value = response.total
+  }).catch(() => {
+    classList.value = []
+    total.value = 0
+    listError.value = true
+  }).finally(() => {
     loading.value = false
   })
 }

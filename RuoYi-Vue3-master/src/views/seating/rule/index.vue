@@ -100,6 +100,13 @@
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['seating:rule:remove']">删除</el-button>
         </template>
       </el-table-column>
+      <template #empty>
+        <seating-table-empty-state
+          :description="listEmptyDescription"
+          :action-text="listEmptyActionText"
+          @action="handleListEmptyAction"
+        />
+      </template>
     </el-table>
     
     <pagination
@@ -236,6 +243,7 @@ const classOptions = ref([])
 const studentOptions = ref([])
 const open = ref(false)
 const loading = ref(true)
+const listError = ref(false)
 const showSearch = ref(true)
 const ids = ref([])
 const single = ref(true)
@@ -276,12 +284,32 @@ const data = reactive({
 
 const { queryParams, form, rules } = toRefs(data)
 
+const hasActiveFilters = computed(() => Object.entries(queryParams.value).some(([key, value]) => !["pageNum", "pageSize"].includes(key) && value !== undefined && value !== null && value !== ""))
+const listEmptyDescription = computed(() => listError.value ? "排座规则列表加载失败，请检查网络后重试。" : hasActiveFilters.value ? "没有找到符合条件的排座规则。" : "暂无排座规则，请先新增规则。")
+const listEmptyActionText = computed(() => listError.value ? "重新加载" : hasActiveFilters.value ? "重置筛选" : "新增规则")
+
+function handleListEmptyAction() {
+  if (listError.value) {
+    getList()
+  } else if (hasActiveFilters.value) {
+    resetQuery()
+  } else {
+    handleAdd()
+  }
+}
+
 /** 查询排座规则列表 */
 function getList() {
   loading.value = true
+  listError.value = false
   listRule(queryParams.value).then(response => {
     ruleList.value = response.rows
     total.value = response.total
+  }).catch(() => {
+    ruleList.value = []
+    total.value = 0
+    listError.value = true
+  }).finally(() => {
     loading.value = false
   })
 }

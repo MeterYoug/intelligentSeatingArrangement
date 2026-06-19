@@ -43,6 +43,7 @@ import ImageUpload from "@/components/ImageUpload"
 import ImagePreview from "@/components/ImagePreview"
 // 字典标签组件
 import DictTag from '@/components/DictTag'
+import SeatingTableEmptyState from '@/components/SeatingTableEmptyState'
 
 const app = createApp(App)
 
@@ -65,6 +66,7 @@ app.component('ImageUpload', ImageUpload)
 app.component('ImagePreview', ImagePreview)
 app.component('RightToolbar', RightToolbar)
 app.component('Editor', Editor)
+app.component('SeatingTableEmptyState', SeatingTableEmptyState)
 
 app.use(router)
 app.use(store)

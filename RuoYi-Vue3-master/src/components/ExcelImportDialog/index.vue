@@ -1,7 +1,7 @@
 <template>
   <el-dialog :title="title" v-model="visible" :width="width" append-to-body @close="handleClose">
     <slot name="prepend"></slot>
-    <el-upload ref="uploadRef" :limit="1" accept=".xlsx, .xls" :headers="headers" :action="uploadUrl" :disabled="isUploading" :on-progress="handleProgress" :on-change="handleFileChange" :on-remove="handleFileRemove" :on-success="handleSuccess" :auto-upload="false" drag>
+    <el-upload ref="uploadRef" :limit="1" accept=".xlsx, .xls" :headers="headers" :action="uploadUrl" :disabled="isUploading" :on-progress="handleProgress" :on-change="handleFileChange" :on-remove="handleFileRemove" :on-success="handleSuccess" :on-error="handleError" :auto-upload="false" drag>
       <el-icon class="el-icon--upload"><upload-filled /></el-icon>
       <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
       <template #tip>
@@ -69,7 +69,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['success'])
+const emit = defineEmits(['success', 'error'])
 
 const uploadRef = ref(null)
 const visible = ref(false)
@@ -128,12 +128,25 @@ const handleFileRemove = (file, fileList) => {
 
 // 上传成功
 function handleSuccess(response) {
+  if (response.code !== 200) {
+    isUploading.value = false
+    proxy.$modal.msgError(response.msg || "导入失败，请检查文件内容后重试。")
+    emit('error', response)
+    return
+  }
   visible.value = false
   isUploading.value = false
   selectedFile.value = null
   uploadRef.value?.clearFiles()
   proxy.$alert("<div style='overflow:auto;overflow-x:hidden;max-height:70vh;padding:10px 20px 0;'>" + response.msg + '</div>', '导入结果', { dangerouslyUseHTMLString: true })
   emit('success')
+}
+
+function handleError(error) {
+  isUploading.value = false
+  const message = error?.message || "网络异常，请检查服务连接后重试。"
+  proxy.$modal.msgError(`导入失败：${message}`)
+  emit('error', error)
 }
 
 // 提交上传
