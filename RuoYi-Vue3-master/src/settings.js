@@ -2,7 +2,7 @@ export default {
   /**
    * 网页标题
    */
-  title: import.meta.env.VITE_APP_TITLE,
+  title: '慧排座',
 
   /**
    * 侧边栏主题 深色主题theme-dark，浅色主题theme-light
@@ -62,6 +62,6 @@ export default {
   /**
    * 底部版权文本内容
    */
-  footerContent: 'Copyright © 2018-2026 RuoYi. All Rights Reserved.'
+  footerContent: 'Copyright © 2026 慧排座. All Rights Reserved.'
 }
 

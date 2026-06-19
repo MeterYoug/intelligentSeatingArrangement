@@ -2,7 +2,7 @@
   <div class="dashboard-page">
     <section class="overview-band">
       <div>
-        <p class="eyebrow">智能排座工作台</p>
+        <p class="eyebrow">慧排座工作台</p>
         <h1>老师日常排座与成绩管理</h1>
         <p class="overview-text">
           围绕班级、学生、成绩、教室布局、排座规则和座位方案完成一套闭环管理。

@@ -1,0 +1,11 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="慧排座">
+  <rect x="4" y="4" width="56" height="56" rx="14" fill="#0F766E"/>
+  <path d="M18 17H34C40.6274 17 46 22.3726 46 29V45H30C23.3726 45 18 39.6274 18 33V17Z" fill="#D9F99D" opacity="0.95"/>
+  <path d="M18 17H34C40.6274 17 46 22.3726 46 29V45H30C23.3726 45 18 39.6274 18 33V17Z" stroke="#ECFCCB" stroke-width="2"/>
+  <rect x="23" y="22" width="7" height="7" rx="2" fill="#0F766E"/>
+  <rect x="34" y="22" width="7" height="7" rx="2" fill="#0F766E"/>
+  <rect x="23" y="33" width="7" height="7" rx="2" fill="#0F766E"/>
+  <path d="M36 39L42.5 45.5L53 32" stroke="#FACC15" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="47" cy="18" r="3" fill="#FACC15"/>
+  <path d="M14 48C20 51.5 27.5 53 35 51" stroke="#99F6E4" stroke-width="3" stroke-linecap="round"/>
+</svg>
