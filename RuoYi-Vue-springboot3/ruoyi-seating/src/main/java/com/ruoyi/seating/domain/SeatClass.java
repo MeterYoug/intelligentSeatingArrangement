@@ -32,6 +32,9 @@ public class SeatClass extends BaseEntity
     /** Stable grade code, such as PRIMARY_4 */
     private String gradeCode;
 
+    /** 班级科目快照 JSON */
+    private String subjectSnapshot;
+
     /** 学年 */
     @Excel(name = "学年")
     private String schoolYear;
@@ -105,6 +108,16 @@ public class SeatClass extends BaseEntity
         return gradeCode;
     }
 
+    public void setSubjectSnapshot(String subjectSnapshot)
+    {
+        this.subjectSnapshot = subjectSnapshot;
+    }
+
+    public String getSubjectSnapshot()
+    {
+        return subjectSnapshot;
+    }
+
     public void setSchoolYear(String schoolYear) 
     {
         this.schoolYear = schoolYear;
@@ -173,6 +186,7 @@ public class SeatClass extends BaseEntity
             .append("gradeName", getGradeName())
             .append("schoolStage", getSchoolStage())
             .append("gradeCode", getGradeCode())
+            .append("subjectSnapshot", getSubjectSnapshot())
             .append("schoolYear", getSchoolYear())
             .append("semester", getSemester())
             .append("teacherId", getTeacherId())

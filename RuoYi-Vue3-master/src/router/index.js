@@ -177,6 +177,20 @@ export const dynamicRoutes = [
         meta: { title: '座位方案详情', activeMenu: '/seating/plan' }
       }
     ]
+  },
+  {
+    path: '/seating/score-detail',
+    component: Layout,
+    hidden: true,
+    permissions: ['seating:studentScore:list'],
+    children: [
+      {
+        path: 'index/:examId(\\d+)',
+        component: () => import('@/views/seating/score/detail'),
+        name: 'SeatingScoreDetail',
+        meta: { title: '考试成绩详情', activeMenu: '/seating/score' }
+      }
+    ]
   }
 ]
 

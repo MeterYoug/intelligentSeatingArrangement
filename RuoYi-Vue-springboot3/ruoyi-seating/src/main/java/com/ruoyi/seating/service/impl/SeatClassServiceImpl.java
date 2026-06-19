@@ -1,6 +1,7 @@
 package com.ruoyi.seating.service.impl;
 
 import java.util.List;
+import com.alibaba.fastjson2.JSON;
 import org.apache.commons.lang3.StringUtils;
 import com.ruoyi.common.utils.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -115,6 +116,12 @@ public class SeatClassServiceImpl implements ISeatClassService
         {
             seatClass.setGradeName(GradeSubjectHelper.gradeNameOf(seatClass.getGradeCode()));
         }
+        List<String> subjects = GradeSubjectHelper.parseSubjectSnapshot(seatClass.getSubjectSnapshot());
+        if (subjects.isEmpty())
+        {
+            subjects = GradeSubjectHelper.defaultSubjects(seatClass);
+        }
+        seatClass.setSubjectSnapshot(JSON.toJSONString(subjects));
         return seatClass;
     }
 

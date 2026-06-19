@@ -121,6 +121,11 @@ public class SeatExamServiceImpl implements ISeatExamService
 
     private List<String> resolveSubjectNames(SeatClass seatClass)
     {
+        List<String> classSubjects = GradeSubjectHelper.resolveClassSubjects(seatClass);
+        if (!classSubjects.isEmpty())
+        {
+            return classSubjects;
+        }
         SeatSubject query = new SeatSubject();
         query.setSchoolStage(StringUtils.defaultIfBlank(seatClass.getSchoolStage(), GradeSubjectHelper.stageOf(seatClass.getGradeCode())));
         query.setGradeCode(seatClass.getGradeCode());
@@ -128,7 +133,7 @@ public class SeatExamServiceImpl implements ISeatExamService
         List<SeatSubject> configured = seatSubjectMapper.selectSeatSubjectList(query);
         if (configured != null && !configured.isEmpty())
         {
-            return configured.stream().map(SeatSubject::getSubjectName).toList();
+            return GradeSubjectHelper.normalizeSubjects(configured.stream().map(SeatSubject::getSubjectName).toList());
         }
         return GradeSubjectHelper.defaultSubjects(seatClass);
     }

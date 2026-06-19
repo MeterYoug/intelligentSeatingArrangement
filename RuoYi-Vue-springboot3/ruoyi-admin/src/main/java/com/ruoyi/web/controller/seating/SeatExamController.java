@@ -70,7 +70,7 @@ public class SeatExamController extends BaseController
     {
         checkClassAccess(seatExam.getClassId());
         seatExam.setCreateBy(getUsername());
-        return toAjax(seatExamService.insertSeatExam(seatExam));
+        return seatExamService.insertSeatExam(seatExam) > 0 ? success(seatExam) : error();
     }
 
     @PreAuthorize("@ss.hasPermi('seating:exam:edit')")

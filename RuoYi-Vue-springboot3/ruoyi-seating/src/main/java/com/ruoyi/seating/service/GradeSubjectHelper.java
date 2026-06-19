@@ -2,8 +2,11 @@ package com.ruoyi.seating.service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import com.alibaba.fastjson2.JSON;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.seating.domain.SeatClass;
 
@@ -87,5 +90,48 @@ public class GradeSubjectHelper
             return new ArrayList<>(SENIOR_SUBJECTS);
         }
         return new ArrayList<>(PRIMARY_SUBJECTS);
+    }
+
+    public static List<String> resolveClassSubjects(SeatClass seatClass)
+    {
+        List<String> configured = parseSubjectSnapshot(seatClass == null ? null : seatClass.getSubjectSnapshot());
+        if (!configured.isEmpty())
+        {
+            return configured;
+        }
+        return defaultSubjects(seatClass);
+    }
+
+    public static List<String> parseSubjectSnapshot(String subjectSnapshot)
+    {
+        if (StringUtils.isBlank(subjectSnapshot))
+        {
+            return new ArrayList<>();
+        }
+        try
+        {
+            return normalizeSubjects(JSON.parseArray(subjectSnapshot, String.class));
+        }
+        catch (Exception e)
+        {
+            return new ArrayList<>();
+        }
+    }
+
+    public static List<String> normalizeSubjects(List<String> subjects)
+    {
+        Set<String> unique = new LinkedHashSet<>();
+        if (subjects != null)
+        {
+            for (String subject : subjects)
+            {
+                String value = StringUtils.trim(subject);
+                if (StringUtils.isNotBlank(value))
+                {
+                    unique.add(value);
+                }
+            }
+        }
+        return new ArrayList<>(unique);
     }
 }

@@ -107,7 +107,7 @@ public class SeatStudentScoreServiceImpl implements ISeatStudentScoreService
         {
             throw new ServiceException("班级不存在");
         }
-        List<String> subjects = GradeSubjectHelper.defaultSubjects(seatClass);
+        List<String> subjects = GradeSubjectHelper.resolveClassSubjects(seatClass);
         writeTemplate(response, seatClass, subjects);
     }
 
@@ -284,10 +284,10 @@ public class SeatStudentScoreServiceImpl implements ISeatStudentScoreService
     {
         if (StringUtils.isNotBlank(exam.getSubjectSnapshot()))
         {
-            return JSON.parseArray(exam.getSubjectSnapshot(), String.class);
+            return GradeSubjectHelper.normalizeSubjects(JSON.parseArray(exam.getSubjectSnapshot(), String.class));
         }
         SeatClass seatClass = seatClassService.selectSeatClassByClassId(exam.getClassId());
-        return GradeSubjectHelper.defaultSubjects(seatClass);
+        return GradeSubjectHelper.resolveClassSubjects(seatClass);
     }
 
     private Map<String, Integer> readHeader(Row header)

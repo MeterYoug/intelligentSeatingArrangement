@@ -100,6 +100,15 @@
       <el-table-column label="班级ID" align="center" prop="classId" />
       <el-table-column label="班级名称" align="center" prop="className" />
       <el-table-column label="年级" align="center" prop="gradeName" />
+      <el-table-column label="科目" align="left" prop="subjectSnapshot" min-width="220" show-overflow-tooltip>
+        <template #default="scope">
+          <el-space wrap>
+            <el-tag v-for="subject in parseSubjectSnapshot(scope.row.subjectSnapshot)" :key="subject" size="small" effect="plain">
+              {{ subject }}
+            </el-tag>
+          </el-space>
+        </template>
+      </el-table-column>
       <el-table-column label="学年" align="center" prop="schoolYear" />
       <el-table-column label="学期" align="center" prop="semester">
         <template #default="scope">
@@ -144,6 +153,18 @@
                   :key="item.value"
                   :label="item.label"
                   :value="item.value"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="科目" prop="subjectNames">
+              <el-select v-model="form.subjectNames" multiple filterable placeholder="请选择班级科目" style="width: 100%">
+                <el-option
+                  v-for="item in subjectOptions"
+                  :key="item"
+                  :label="item"
+                  :value="item"
                 />
               </el-select>
             </el-form-item>
@@ -229,6 +250,12 @@ const semesterOptions = [
   { value: "2", label: "下学期" }
 ]
 
+const subjectOptions = ["语文", "数学", "英语", "科学", "道德与法治", "历史", "地理", "生物", "物理", "化学", "政治"]
+
+const primarySubjects = ["语文", "数学", "英语", "科学"]
+const juniorSubjects = ["语文", "数学", "英语", "道德与法治", "历史", "地理", "生物"]
+const seniorSubjects = ["语文", "数学", "英语", "物理", "化学", "生物", "政治", "历史", "地理"]
+
 const data = reactive({
   form: {},
   queryParams: {
@@ -246,6 +273,9 @@ const data = reactive({
     ],
     gradeCode: [
       { required: true, message: "请选择年级", trigger: "change" }
+    ],
+    subjectNames: [
+      { required: true, message: "请选择班级科目", trigger: "change" }
     ],
   }
 })
@@ -273,6 +303,8 @@ function reset() {
     gradeName: null,
     gradeCode: null,
     schoolStage: null,
+    subjectSnapshot: null,
+    subjectNames: [],
     schoolYear: null,
     semester: null,
     status: "0",
@@ -285,6 +317,7 @@ function handleGradeChange(value) {
   const grade = gradeOptions.find(item => item.value === value)
   form.value.gradeName = grade?.label || null
   form.value.schoolStage = grade?.stage || null
+  form.value.subjectNames = defaultSubjects(value)
 }
 
 function optionLabel(options, value) {
@@ -304,21 +337,64 @@ function normalizeLoadedGrade() {
   } else if (form.value.semester === "下学期") {
     form.value.semester = "2"
   }
+  form.value.subjectNames = parseSubjectSnapshot(form.value.subjectSnapshot)
+  if (!form.value.subjectNames.length) {
+    form.value.subjectNames = defaultSubjects(form.value.gradeCode)
+  }
 }
 
 function buildSubmitData() {
-  handleGradeChange(form.value.gradeCode)
+  const grade = gradeOptions.find(item => item.value === form.value.gradeCode)
+  form.value.gradeName = grade?.label || null
+  form.value.schoolStage = grade?.stage || null
   return {
     classId: form.value.classId,
     className: form.value.className,
     gradeName: form.value.gradeName,
     gradeCode: form.value.gradeCode,
     schoolStage: form.value.schoolStage,
+    subjectSnapshot: JSON.stringify(normalizeSubjects(form.value.subjectNames)),
     schoolYear: form.value.schoolYear,
     semester: form.value.semester,
     status: form.value.status,
     remark: form.value.remark
   }
+}
+
+function defaultSubjects(gradeCode) {
+  const grade = gradeOptions.find(item => item.value === gradeCode)
+  if (!grade) {
+    return [...primarySubjects]
+  }
+  if (grade.stage === "PRIMARY") {
+    return [...primarySubjects]
+  }
+  if (grade.stage === "JUNIOR") {
+    const subjects = [...juniorSubjects]
+    if (gradeCode !== "JUNIOR_1") {
+      subjects.push("物理")
+    }
+    if (gradeCode === "JUNIOR_3") {
+      subjects.push("化学")
+    }
+    return normalizeSubjects(subjects)
+  }
+  return [...seniorSubjects]
+}
+
+function parseSubjectSnapshot(value) {
+  if (!value) {
+    return []
+  }
+  try {
+    return normalizeSubjects(JSON.parse(value))
+  } catch (e) {
+    return []
+  }
+}
+
+function normalizeSubjects(subjects) {
+  return [...new Set((subjects || []).map(item => String(item || "").trim()).filter(Boolean))]
 }
 
 function handleQuery() {
