@@ -461,7 +461,7 @@ function exportSeatTable() {
     return
   }
   const planId = route.params.planId
-  proxy.download(exportSeatTableUrl(planId), { viewMode: viewMode.value }, `seat_plan_${planId}_${new Date().getTime()}.xlsx`)
+  proxy.download(exportSeatTableUrl(planId), { viewMode: viewMode.value }, buildExportFilename("xlsx"))
 }
 
 function exportSeatImage() {
@@ -475,7 +475,7 @@ function exportSeatImage() {
       proxy.$modal.msgError("导出图片失败")
       return
     }
-    downloadBlob(blob, `seat_plan_${route.params.planId}_${new Date().getTime()}.png`)
+    downloadBlob(blob, buildExportFilename("png"))
   }, "image/png")
 }
 
@@ -698,7 +698,7 @@ function downloadBlob(blob, filename) {
 }
 
 function buildPrintHtml(imageUrl) {
-  const title = escapeHtml(plan.value.planName || "座位方案")
+  const title = escapeHtml(buildExportTitle())
   return `<!doctype html>
 <html>
 <head>
@@ -725,6 +725,21 @@ function buildPrintHtml(imageUrl) {
   <\/script>
 </body>
 </html>`
+}
+
+function buildExportFilename(extension) {
+  return `${sanitizeFilename(buildExportTitle())}.${extension}`
+}
+
+function buildExportTitle() {
+  return `${plan.value.planName || "座位方案"}-${viewModeLabel.value}-座位表`
+}
+
+function sanitizeFilename(value) {
+  const filename = String(value || "座位方案")
+    .replace(/[\\/:*?"<>|]/g, "_")
+    .replace(/[.\s]+$/g, "")
+  return filename || "座位方案"
 }
 
 function escapeHtml(value) {

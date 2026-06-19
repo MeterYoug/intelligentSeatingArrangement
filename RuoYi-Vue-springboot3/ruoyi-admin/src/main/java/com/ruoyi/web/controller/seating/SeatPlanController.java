@@ -185,10 +185,11 @@ public class SeatPlanController extends BaseController
     @PreAuthorize("@ss.hasPermi('seating:plan:add')")
     @Log(title = "排座方案", businessType = BusinessType.INSERT)
     @PostMapping("/{planId}/copy")
-    public AjaxResult copy(@PathVariable("planId") Long planId)
+    public AjaxResult copy(@PathVariable("planId") Long planId, @RequestBody(required = false) SeatPlan copyRequest)
     {
         SeatPlan plan = checkPlanAccess(planId);
-        return success(seatPlanService.copySeatPlan(plan, getUsername()));
+        String planName = copyRequest == null ? null : copyRequest.getPlanName();
+        return success(seatPlanService.copySeatPlan(plan, planName, getUsername()));
     }
 
     /**

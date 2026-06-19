@@ -44,10 +44,11 @@ export function confirmPlan(planId) {
 }
 
 // 复制座位方案
-export function copyPlan(planId) {
+export function copyPlan(planId, data) {
   return request({
     url: '/seating/plan/' + planId + '/copy',
-    method: 'post'
+    method: 'post',
+    data: data
   })
 }
 

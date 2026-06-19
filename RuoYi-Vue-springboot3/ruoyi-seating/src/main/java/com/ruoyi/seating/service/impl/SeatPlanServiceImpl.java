@@ -95,6 +95,7 @@ public class SeatPlanServiceImpl implements ISeatPlanService
     @Override
     public int insertSeatPlan(SeatPlan seatPlan)
     {
+        seatPlan.setPlanName(normalizePlanName(seatPlan.getPlanName(), null));
         seatPlan.setCreateTime(DateUtils.getNowDate());
         return seatPlanMapper.insertSeatPlan(seatPlan);
     }
@@ -108,6 +109,10 @@ public class SeatPlanServiceImpl implements ISeatPlanService
     @Override
     public int updateSeatPlan(SeatPlan seatPlan)
     {
+        if (seatPlan.getPlanName() != null)
+        {
+            seatPlan.setPlanName(normalizePlanName(seatPlan.getPlanName(), null));
+        }
         seatPlan.setUpdateTime(DateUtils.getNowDate());
         return seatPlanMapper.updateSeatPlan(seatPlan);
     }
@@ -237,7 +242,7 @@ public class SeatPlanServiceImpl implements ISeatPlanService
 
     @Override
     @Transactional
-    public SeatPlan copySeatPlan(SeatPlan seatPlan, String operName)
+    public SeatPlan copySeatPlan(SeatPlan seatPlan, String planName, String operName)
     {
         if (seatPlan == null || seatPlan.getPlanId() == null)
         {
@@ -247,7 +252,7 @@ public class SeatPlanServiceImpl implements ISeatPlanService
         SeatPlan copiedPlan = new SeatPlan();
         copiedPlan.setClassId(seatPlan.getClassId());
         copiedPlan.setClassroomId(seatPlan.getClassroomId());
-        copiedPlan.setPlanName(buildCopyPlanName(seatPlan.getPlanName()));
+        copiedPlan.setPlanName(normalizePlanName(planName, buildCopyPlanName(seatPlan.getPlanName())));
         copiedPlan.setPlanType("MANUAL");
         copiedPlan.setPlanStatus("DRAFT");
         copiedPlan.setTotalScore(seatPlan.getTotalScore());
@@ -267,7 +272,7 @@ public class SeatPlanServiceImpl implements ISeatPlanService
         SeatPlan generatedPlan = new SeatPlan();
         generatedPlan.setClassId(seatPlan.getClassId());
         generatedPlan.setClassroomId(seatPlan.getClassroomId());
-        generatedPlan.setPlanName(StringUtils.defaultIfBlank(seatPlan.getPlanName(),
+        generatedPlan.setPlanName(normalizePlanName(seatPlan.getPlanName(),
                 "智能排座-" + DateUtils.dateTimeNow()));
         generatedPlan.setPlanType("AUTO");
         generatedPlan.setPlanStatus(StringUtils.defaultIfBlank(seatPlan.getPlanStatus(), "DRAFT"));
@@ -360,6 +365,20 @@ public class SeatPlanServiceImpl implements ISeatPlanService
             sourceName = sourceName.substring(0, maxSourceLength);
         }
         return sourceName + suffix;
+    }
+
+    private String normalizePlanName(String planName, String defaultName)
+    {
+        String normalizedName = StringUtils.trim(StringUtils.defaultIfBlank(planName, defaultName));
+        if (StringUtils.isBlank(normalizedName))
+        {
+            throw new ServiceException("方案名称不能为空");
+        }
+        if (normalizedName.length() > 64)
+        {
+            throw new ServiceException("方案名称长度不能超过64个字符");
+        }
+        return normalizedName;
     }
 
     private void copyAssignments(SeatPlan sourcePlan, SeatPlan targetPlan, String operName)

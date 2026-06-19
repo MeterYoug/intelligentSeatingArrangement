@@ -163,7 +163,7 @@
           </el-col>
           <el-col :span="24">
             <el-form-item label="方案名称" prop="planName">
-              <el-input v-model="form.planName" placeholder="请输入方案名称" />
+              <el-input v-model="form.planName" placeholder="请输入方案名称" maxlength="64" show-word-limit />
             </el-form-item>
           </el-col>
           <el-col :span="24">
@@ -254,7 +254,8 @@ const data = reactive({
       { required: true, message: "请选择教室布局", trigger: "change" }
     ],
     planName: [
-      { required: true, message: "方案名称不能为空", trigger: "blur" }
+      { required: true, message: "方案名称不能为空", trigger: "blur" },
+      { max: 64, message: "方案名称长度不能超过64个字符", trigger: "blur" }
     ],
   }
 })
@@ -379,8 +380,16 @@ function handleCopy(row) {
   if (!target?.planId) {
     return
   }
-  proxy.$modal.confirm('确认复制方案"' + target.planName + '"？复制后会生成新的草稿方案。').then(function() {
-    return copyPlan(target.planId)
+  const suggestedName = `${target.planName || "座位方案"}-副本`.slice(0, 64)
+  proxy.$prompt(`请输入方案"${target.planName}"的副本名称`, "复制座位方案", {
+    confirmButtonText: "确定",
+    cancelButtonText: "取消",
+    closeOnClickModal: false,
+    inputValue: suggestedName,
+    inputPlaceholder: "请输入新方案名称",
+    inputValidator: validatePlanName
+  }).then(({ value }) => {
+    return copyPlan(target.planId, { planName: value.trim() })
   }).then(response => {
     proxy.$modal.msgSuccess("复制成功")
     getList()
@@ -388,6 +397,17 @@ function handleCopy(row) {
       router.push("/seating/plan-detail/index/" + response.data.planId)
     }
   }).catch(() => {})
+}
+
+function validatePlanName(value) {
+  const planName = String(value || "").trim()
+  if (!planName) {
+    return "方案名称不能为空"
+  }
+  if (planName.length > 64) {
+    return "方案名称长度不能超过64个字符"
+  }
+  return true
 }
 
 /** 修改按钮操作 */
