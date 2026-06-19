@@ -1,5 +1,6 @@
 <template>
   <el-dialog :title="title" v-model="visible" :width="width" append-to-body @close="handleClose">
+    <slot name="prepend"></slot>
     <el-upload ref="uploadRef" :limit="1" accept=".xlsx, .xls" :headers="headers" :action="uploadUrl" :disabled="isUploading" :on-progress="handleProgress" :on-change="handleFileChange" :on-remove="handleFileRemove" :on-success="handleSuccess" :auto-upload="false" drag>
       <el-icon class="el-icon--upload"><upload-filled /></el-icon>
       <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
@@ -61,6 +62,10 @@ const props = defineProps({
   extraParams: {
     type: Object,
     default: () => ({})
+  },
+  beforeSubmit: {
+    type: Function,
+    default: null
   }
 })
 
@@ -133,6 +138,9 @@ function handleSuccess(response) {
 
 // 提交上传
 function handleSubmit() {
+  if (props.beforeSubmit && props.beforeSubmit() === false) {
+    return
+  }
   const file = selectedFile.value
   if (!file || file.length === 0 || !file.name.toLowerCase().endsWith('.xls') && !file.name.toLowerCase().endsWith('.xlsx')) {
     proxy.$modal.msgError("请选择后缀为 “xls”或“xlsx”的文件。")

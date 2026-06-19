@@ -298,27 +298,6 @@
       </template>
     </el-dialog>
 
-    <el-dialog title="选择导入班级" v-model="importClassOpen" width="420px" append-to-body>
-      <el-form label-width="80px">
-        <el-form-item label="班级" required>
-          <el-select v-model="importClassId" placeholder="请选择班级" filterable style="width: 100%">
-            <el-option
-              v-for="item in classOptions"
-              :key="item.classId"
-              :label="item.className"
-              :value="item.classId"
-            />
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <div class="dialog-footer">
-          <el-button type="primary" @click="openImportDialog">下一步</el-button>
-          <el-button @click="importClassOpen = false">取消</el-button>
-        </div>
-      </template>
-    </el-dialog>
-
     <excel-import-dialog
       ref="importStudentRef"
       title="学生导入"
@@ -327,8 +306,24 @@
       template-file-name="student_template"
       update-support-label="是否按学号更新该班级已有学生"
       :extra-params="{ classId: importClassId }"
+      :before-submit="validateImportClass"
       @success="getList"
-    />
+    >
+      <template #prepend>
+        <el-form label-width="80px" class="student-import-form">
+          <el-form-item label="班级" required>
+            <el-select v-model="importClassId" placeholder="请选择班级" filterable style="width: 100%">
+              <el-option
+                v-for="item in classOptions"
+                :key="item.classId"
+                :label="item.className"
+                :value="item.classId"
+              />
+            </el-select>
+          </el-form-item>
+        </el-form>
+      </template>
+    </excel-import-dialog>
   </div>
 </template>
 
@@ -361,7 +356,6 @@ const disciplineOptions = [
 const studentList = ref([])
 const classOptions = ref([])
 const open = ref(false)
-const importClassOpen = ref(false)
 const importClassId = ref(null)
 const loading = ref(true)
 const showSearch = ref(true)
@@ -488,17 +482,16 @@ function handleAdd() {
 function handleImport() {
   importClassId.value = queryParams.value.classId || null
   getClassOptions().then(() => {
-    importClassOpen.value = true
+    proxy.$refs["importStudentRef"].open()
   })
 }
 
-function openImportDialog() {
+function validateImportClass() {
   if (!importClassId.value) {
     proxy.$modal.msgError("请选择导入班级")
-    return
+    return false
   }
-  importClassOpen.value = false
-  proxy.$refs["importStudentRef"].open()
+  return true
 }
 
 /** 修改按钮操作 */
@@ -555,3 +548,9 @@ function handleExport() {
 getClassOptions()
 getList()
 </script>
+
+<style scoped>
+.student-import-form {
+  margin-bottom: 12px;
+}
+</style>

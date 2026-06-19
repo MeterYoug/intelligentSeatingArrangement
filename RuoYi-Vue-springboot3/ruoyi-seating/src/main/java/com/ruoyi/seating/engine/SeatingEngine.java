@@ -39,34 +39,48 @@ public class SeatingEngine
         List<SeatPosition> seats = new ArrayList<>(context.getSeats());
         List<SeatRule> rules = safeRules(context.getRules());
         List<SeatStudentRelation> relations = safeRelations(context.getRelations());
+        Map<String, SeatRule> activeRules = activeRuleMap(rules);
         students.sort(studentComparator());
         seats.sort(seatComparator());
+        Map<Long, Integer> deskPairIndexes = deskPairIndexes(seats);
 
         Map<Long, Long> frontRowLimits = frontRowLimits(students, rules);
-        List<SeatingAssignmentResult> assignments = greedyAssign(students, seats, relations, frontRowLimits);
-        assignments = optimize(assignments, relations, frontRowLimits, context);
+        List<SeatingAssignmentResult> assignments = greedyAssign(students, seats, relations, frontRowLimits,
+                activeRules, deskPairIndexes);
+        assignments = optimize(assignments, relations, frontRowLimits, activeRules, deskPairIndexes, context);
 
-        List<String> conflicts = hardConflicts(assignments, relations, frontRowLimits);
-        List<SeatingScoreItem> scoreItems = score(assignments, relations, frontRowLimits, context.getRandomSeed(), conflicts);
-        BigDecimal totalScore = totalScore(scoreItems);
+        List<String> conflicts = hardConflicts(assignments, relations, frontRowLimits, deskPairIndexes);
+        List<SeatingScoreItem> scoreItems = score(assignments, relations, frontRowLimits, activeRules, deskPairIndexes);
+        BigDecimal totalScore = totalScore(scoreItems, activeRules);
         return new SeatingResult(assignments, scoreItems, totalScore, conflicts);
     }
 
     public SeatingResult evaluate(List<SeatingAssignmentResult> assignments, List<SeatRule> rules,
             List<SeatStudentRelation> relations, long randomSeed)
     {
+        List<SeatPosition> seats = assignments.stream().map(SeatingAssignmentResult::getSeat).toList();
+        return evaluate(assignments, seats, rules, relations, randomSeed);
+    }
+
+    public SeatingResult evaluate(List<SeatingAssignmentResult> assignments, List<SeatPosition> seats,
+            List<SeatRule> rules, List<SeatStudentRelation> relations, long randomSeed)
+    {
         List<SeatRule> safeRules = safeRules(rules);
         List<SeatStudentRelation> safeRelations = safeRelations(relations);
+        Map<String, SeatRule> activeRules = activeRuleMap(safeRules);
+        Map<Long, Integer> deskPairIndexes = deskPairIndexes(seats);
         Map<Long, Long> frontRowLimits = frontRowLimits(
                 assignments.stream().map(SeatingAssignmentResult::getStudent).toList(), safeRules);
-        List<String> conflicts = hardConflicts(assignments, safeRelations, frontRowLimits);
-        List<SeatingScoreItem> scoreItems = score(assignments, safeRelations, frontRowLimits, randomSeed, conflicts);
-        BigDecimal totalScore = totalScore(scoreItems);
+        List<String> conflicts = hardConflicts(assignments, safeRelations, frontRowLimits, deskPairIndexes);
+        List<SeatingScoreItem> scoreItems = score(assignments, safeRelations, frontRowLimits, activeRules,
+                deskPairIndexes);
+        BigDecimal totalScore = totalScore(scoreItems, activeRules);
         return new SeatingResult(assignments, scoreItems, totalScore, conflicts);
     }
 
     private List<SeatingAssignmentResult> greedyAssign(List<SeatStudent> students, List<SeatPosition> seats,
-            List<SeatStudentRelation> relations, Map<Long, Long> frontRowLimits)
+            List<SeatStudentRelation> relations, Map<Long, Long> frontRowLimits, Map<String, SeatRule> activeRules,
+            Map<Long, Integer> deskPairIndexes)
     {
         List<SeatingAssignmentResult> assignments = new ArrayList<>();
         Set<Long> usedSeatIds = new HashSet<>();
@@ -84,7 +98,7 @@ public class SeatingEngine
                     continue;
                 }
                 BigDecimal penalty = placementPenalty(student, seat, assignments, relations, frontRowLimits,
-                        averageHeight, maxRow);
+                        activeRules, deskPairIndexes, averageHeight, maxRow);
                 if (bestPenalty == null || penalty.compareTo(bestPenalty) < 0
                         || (penalty.compareTo(bestPenalty) == 0 && seatComparator().compare(seat, bestSeat) < 0))
                 {
@@ -99,7 +113,8 @@ public class SeatingEngine
     }
 
     private List<SeatingAssignmentResult> optimize(List<SeatingAssignmentResult> assignments,
-            List<SeatStudentRelation> relations, Map<Long, Long> frontRowLimits, SeatingContext context)
+            List<SeatStudentRelation> relations, Map<Long, Long> frontRowLimits, Map<String, SeatRule> activeRules,
+            Map<Long, Integer> deskPairIndexes, SeatingContext context)
     {
         int iterations = context.getOptimizeIterations() > 0 ? context.getOptimizeIterations() : DEFAULT_ITERATIONS;
         if (assignments.size() < 2 || iterations <= 0)
@@ -109,7 +124,7 @@ public class SeatingEngine
 
         Random random = new Random(context.getRandomSeed());
         List<SeatingAssignmentResult> best = copyAssignments(assignments);
-        BigDecimal bestPenalty = totalPenalty(best, relations, frontRowLimits);
+        BigDecimal bestPenalty = totalPenalty(best, relations, frontRowLimits, activeRules, deskPairIndexes);
         for (int i = 0; i < iterations; i++)
         {
             int left = random.nextInt(best.size());
@@ -122,7 +137,8 @@ public class SeatingEngine
             SeatPosition leftSeat = candidate.get(left).getSeat();
             candidate.get(left).setSeat(candidate.get(right).getSeat());
             candidate.get(right).setSeat(leftSeat);
-            BigDecimal candidatePenalty = totalPenalty(candidate, relations, frontRowLimits);
+            BigDecimal candidatePenalty = totalPenalty(candidate, relations, frontRowLimits, activeRules,
+                    deskPairIndexes);
             if (candidatePenalty.compareTo(bestPenalty) < 0)
             {
                 best = candidate;
@@ -134,9 +150,11 @@ public class SeatingEngine
 
     private BigDecimal placementPenalty(SeatStudent student, SeatPosition seat,
             List<SeatingAssignmentResult> assignments, List<SeatStudentRelation> relations,
-            Map<Long, Long> frontRowLimits, BigDecimal averageHeight, long maxRow)
+            Map<Long, Long> frontRowLimits, Map<String, SeatRule> activeRules, Map<Long, Integer> deskPairIndexes,
+            BigDecimal averageHeight, long maxRow)
     {
-        BigDecimal penalty = softPlacementPenalty(student, seat, assignments, averageHeight, maxRow);
+        BigDecimal penalty = softPlacementPenalty(student, seat, assignments, activeRules, averageHeight, maxRow);
+        penalty = penalty.add(pairPlacementPenalty(student, seat, assignments, activeRules, deskPairIndexes));
         Long frontRowLimit = frontRowLimits.get(student.getStudentId());
         if (frontRowLimit != null && seat.getRowIndex() > frontRowLimit)
         {
@@ -150,7 +168,8 @@ public class SeatingEngine
             {
                 continue;
             }
-            if ("NOT_DESKMATE".equals(relation.getRelationType()) && sameDesk(seat, assigned.getSeat()))
+            if ("NOT_DESKMATE".equals(relation.getRelationType())
+                    && sameDesk(seat, assigned.getSeat(), deskPairIndexes))
             {
                 penalty = penalty.add(HARD_PENALTY);
             }
@@ -163,40 +182,68 @@ public class SeatingEngine
     }
 
     private BigDecimal softPlacementPenalty(SeatStudent student, SeatPosition seat,
-            List<SeatingAssignmentResult> assignments, BigDecimal averageHeight, long maxRow)
+            List<SeatingAssignmentResult> assignments, Map<String, SeatRule> activeRules, BigDecimal averageHeight,
+            long maxRow)
     {
         BigDecimal penalty = BigDecimal.ZERO;
         int visionLevel = intValue(student.getVisionLevel());
-        if (visionLevel > 0)
+        if (visionLevel > 0 && activeRules.containsKey("VISION_FRONT"))
         {
-            penalty = penalty.add(BigDecimal.valueOf((seat.getRowIndex() - 1) * visionLevel * 4L));
+            penalty = penalty.add(weightedPenalty((seat.getRowIndex() - 1) * visionLevel * 4L, activeRules, "VISION_FRONT"));
         }
-        if (student.getHeightCm() != null && averageHeight.compareTo(BigDecimal.ZERO) > 0)
+        if (student.getHeightCm() != null && averageHeight.compareTo(BigDecimal.ZERO) > 0
+                && activeRules.containsKey("HEIGHT_BACK"))
         {
             BigDecimal heightDiff = student.getHeightCm().subtract(averageHeight);
             if (heightDiff.compareTo(BigDecimal.valueOf(5)) >= 0)
             {
-                penalty = penalty.add(BigDecimal.valueOf(maxRow - seat.getRowIndex()).multiply(BigDecimal.valueOf(2)));
+                penalty = penalty.add(weightedPenalty((maxRow - seat.getRowIndex()) * 2L, activeRules, "HEIGHT_BACK"));
             }
             else if (heightDiff.compareTo(BigDecimal.valueOf(-5)) <= 0)
             {
-                penalty = penalty.add(BigDecimal.valueOf(seat.getRowIndex() - 1));
+                penalty = penalty.add(weightedPenalty(seat.getRowIndex() - 1, activeRules, "HEIGHT_BACK"));
             }
         }
         int disciplineLevel = intValue(student.getDisciplineLevel());
-        if (disciplineLevel > 0)
+        if (disciplineLevel > 0 && activeRules.containsKey("DISCIPLINE_SCATTER"))
         {
             long adjacentDisciplineCount = assignments.stream()
                     .filter(item -> intValue(item.getStudent().getDisciplineLevel()) > 0)
                     .filter(item -> adjacent(item.getSeat(), seat))
                     .count();
-            penalty = penalty.add(BigDecimal.valueOf(adjacentDisciplineCount * disciplineLevel * 20L));
+            penalty = penalty.add(weightedPenalty(adjacentDisciplineCount * disciplineLevel * 20L,
+                    activeRules, "DISCIPLINE_SCATTER"));
+        }
+        return penalty;
+    }
+
+    private BigDecimal pairPlacementPenalty(SeatStudent student, SeatPosition seat,
+            List<SeatingAssignmentResult> assignments, Map<String, SeatRule> activeRules,
+            Map<Long, Integer> deskPairIndexes)
+    {
+        BigDecimal penalty = BigDecimal.ZERO;
+        for (SeatingAssignmentResult assigned : assignments)
+        {
+            if (!sameDesk(seat, assigned.getSeat(), deskPairIndexes))
+            {
+                continue;
+            }
+            if (activeRules.containsKey("GENDER_BALANCE")
+                    && knownSameValue(student.getGender(), assigned.getStudent().getGender(), "2"))
+            {
+                penalty = penalty.add(weightedPenalty(5L, activeRules, "GENDER_BALANCE"));
+            }
+            if (activeRules.containsKey("SCORE_BALANCE")
+                    && knownSameValue(student.getScoreLevel(), assigned.getStudent().getScoreLevel(), null))
+            {
+                penalty = penalty.add(weightedPenalty(5L, activeRules, "SCORE_BALANCE"));
+            }
         }
         return penalty;
     }
 
     private BigDecimal totalPenalty(List<SeatingAssignmentResult> assignments, List<SeatStudentRelation> relations,
-            Map<Long, Long> frontRowLimits)
+            Map<Long, Long> frontRowLimits, Map<String, SeatRule> activeRules, Map<Long, Integer> deskPairIndexes)
     {
         BigDecimal penalty = BigDecimal.ZERO;
         BigDecimal averageHeight = averageHeight(assignments.stream().map(SeatingAssignmentResult::getStudent).toList());
@@ -204,7 +251,7 @@ public class SeatingEngine
         for (SeatingAssignmentResult assignment : assignments)
         {
             penalty = penalty.add(softPlacementPenalty(assignment.getStudent(), assignment.getSeat(),
-                    assignmentsBefore(assignments, assignment), averageHeight, maxRow));
+                    assignmentsBefore(assignments, assignment), activeRules, averageHeight, maxRow));
             Long frontRowLimit = frontRowLimits.get(assignment.getStudent().getStudentId());
             if (frontRowLimit != null && assignment.getSeat().getRowIndex() > frontRowLimit)
             {
@@ -219,7 +266,8 @@ public class SeatingEngine
             {
                 continue;
             }
-            if ("NOT_DESKMATE".equals(relation.getRelationType()) && sameDesk(left.getSeat(), right.getSeat()))
+            if ("NOT_DESKMATE".equals(relation.getRelationType())
+                    && sameDesk(left.getSeat(), right.getSeat(), deskPairIndexes))
             {
                 penalty = penalty.add(HARD_PENALTY);
             }
@@ -227,27 +275,58 @@ public class SeatingEngine
             {
                 penalty = penalty.add(HARD_PENALTY);
             }
-            if ("PREFER_DESKMATE".equals(relation.getRelationType()) && !sameDesk(left.getSeat(), right.getSeat()))
+            if ("PREFER_DESKMATE".equals(relation.getRelationType())
+                    && !sameDesk(left.getSeat(), right.getSeat(), deskPairIndexes))
             {
                 penalty = penalty.add(BigDecimal.valueOf(weight(relation)));
             }
+        }
+        if (activeRules.containsKey("GENDER_BALANCE"))
+        {
+            penalty = penalty.add(weightedPenalty(sameGenderPairs(assignments, deskPairIndexes) * 5L,
+                    activeRules, "GENDER_BALANCE"));
+        }
+        if (activeRules.containsKey("SCORE_BALANCE"))
+        {
+            penalty = penalty.add(weightedPenalty(sameScorePairs(assignments, deskPairIndexes) * 5L,
+                    activeRules, "SCORE_BALANCE"));
         }
         return penalty;
     }
 
     private List<SeatingScoreItem> score(List<SeatingAssignmentResult> assignments,
-            List<SeatStudentRelation> relations, Map<Long, Long> frontRowLimits, long randomSeed, List<String> conflicts)
+            List<SeatStudentRelation> relations, Map<Long, Long> frontRowLimits, Map<String, SeatRule> activeRules,
+            Map<Long, Integer> deskPairIndexes)
     {
         List<SeatingScoreItem> scoreItems = new ArrayList<>();
-        scoreItems.add(scoreFrontRows(assignments, frontRowLimits));
-        scoreItems.add(scoreVision(assignments));
-        scoreItems.add(scoreHeight(assignments));
-        scoreItems.add(scoreGender(assignments));
-        scoreItems.add(scoreScoreLevel(assignments));
-        scoreItems.add(scoreDiscipline(assignments));
-        scoreItems.add(scoreRelations(assignments, relations));
-        scoreItems.add(scoreCapacity(assignments));
-        scoreItems.add(scoreSeed(randomSeed, conflicts));
+        if (activeRules.containsKey("FRONT_ROW") || !frontRowLimits.isEmpty())
+        {
+            scoreItems.add(scoreFrontRows(assignments, frontRowLimits));
+        }
+        if (activeRules.containsKey("VISION_FRONT"))
+        {
+            scoreItems.add(scoreVision(assignments));
+        }
+        if (activeRules.containsKey("HEIGHT_BACK"))
+        {
+            scoreItems.add(scoreHeight(assignments));
+        }
+        if (activeRules.containsKey("GENDER_BALANCE"))
+        {
+            scoreItems.add(scoreGender(assignments, deskPairIndexes));
+        }
+        if (activeRules.containsKey("SCORE_BALANCE"))
+        {
+            scoreItems.add(scoreScoreLevel(assignments, deskPairIndexes));
+        }
+        if (activeRules.containsKey("DISCIPLINE_SCATTER"))
+        {
+            scoreItems.add(scoreDiscipline(assignments));
+        }
+        if (!relations.isEmpty())
+        {
+            scoreItems.add(scoreRelations(assignments, relations, deskPairIndexes));
+        }
         return scoreItems;
     }
 
@@ -311,7 +390,7 @@ public class SeatingEngine
         return scoreItem("HEIGHT_BACK", "高个学生靠后", penalty, Map.of("affected", affected));
     }
 
-    private SeatingScoreItem scoreGender(List<SeatingAssignmentResult> assignments)
+    private SeatingScoreItem scoreGender(List<SeatingAssignmentResult> assignments, Map<Long, Integer> deskPairIndexes)
     {
         int pairs = 0;
         int sameGenderPairs = 0;
@@ -319,7 +398,7 @@ public class SeatingEngine
         {
             for (int j = i + 1; j < assignments.size(); j++)
             {
-                if (!sameDesk(assignments.get(i).getSeat(), assignments.get(j).getSeat()))
+                if (!sameDesk(assignments.get(i).getSeat(), assignments.get(j).getSeat(), deskPairIndexes))
                 {
                     continue;
                 }
@@ -339,7 +418,8 @@ public class SeatingEngine
                 Map.of("pairs", pairs, "sameGenderPairs", sameGenderPairs));
     }
 
-    private SeatingScoreItem scoreScoreLevel(List<SeatingAssignmentResult> assignments)
+    private SeatingScoreItem scoreScoreLevel(List<SeatingAssignmentResult> assignments,
+            Map<Long, Integer> deskPairIndexes)
     {
         int pairs = 0;
         int sameLevelPairs = 0;
@@ -347,7 +427,7 @@ public class SeatingEngine
         {
             for (int j = i + 1; j < assignments.size(); j++)
             {
-                if (!sameDesk(assignments.get(i).getSeat(), assignments.get(j).getSeat()))
+                if (!sameDesk(assignments.get(i).getSeat(), assignments.get(j).getSeat(), deskPairIndexes))
                 {
                     continue;
                 }
@@ -386,7 +466,8 @@ public class SeatingEngine
                 Map.of("adjacentPairs", adjacentPairs));
     }
 
-    private SeatingScoreItem scoreRelations(List<SeatingAssignmentResult> assignments, List<SeatStudentRelation> relations)
+    private SeatingScoreItem scoreRelations(List<SeatingAssignmentResult> assignments,
+            List<SeatStudentRelation> relations, Map<Long, Integer> deskPairIndexes)
     {
         int violations = 0;
         int preferredMissed = 0;
@@ -398,7 +479,8 @@ public class SeatingEngine
             {
                 continue;
             }
-            if ("NOT_DESKMATE".equals(relation.getRelationType()) && sameDesk(left.getSeat(), right.getSeat()))
+            if ("NOT_DESKMATE".equals(relation.getRelationType())
+                    && sameDesk(left.getSeat(), right.getSeat(), deskPairIndexes))
             {
                 violations++;
             }
@@ -406,7 +488,8 @@ public class SeatingEngine
             {
                 violations++;
             }
-            if ("PREFER_DESKMATE".equals(relation.getRelationType()) && !sameDesk(left.getSeat(), right.getSeat()))
+            if ("PREFER_DESKMATE".equals(relation.getRelationType())
+                    && !sameDesk(left.getSeat(), right.getSeat(), deskPairIndexes))
             {
                 preferredMissed++;
             }
@@ -440,20 +523,32 @@ public class SeatingEngine
                 penalty.setScale(2, RoundingMode.HALF_UP), JSON.toJSONString(detailMap));
     }
 
-    private BigDecimal totalScore(List<SeatingScoreItem> scoreItems)
+    private BigDecimal totalScore(List<SeatingScoreItem> scoreItems, Map<String, SeatRule> activeRules)
     {
         if (scoreItems.isEmpty())
         {
-            return BigDecimal.ZERO;
+            return BigDecimal.valueOf(100).setScale(2, RoundingMode.HALF_UP);
         }
-        return scoreItems.stream()
-                .map(SeatingScoreItem::getScoreValue)
-                .reduce(BigDecimal.ZERO, BigDecimal::add)
-                .divide(BigDecimal.valueOf(scoreItems.size()), 2, RoundingMode.HALF_UP);
+        BigDecimal weightedScore = BigDecimal.ZERO;
+        BigDecimal totalWeight = BigDecimal.ZERO;
+        for (SeatingScoreItem item : scoreItems)
+        {
+            BigDecimal weight = BigDecimal.valueOf(ruleWeight(activeRules, item.getRuleCode()));
+            weightedScore = weightedScore.add(item.getScoreValue().multiply(weight));
+            totalWeight = totalWeight.add(weight);
+        }
+        if (totalWeight.compareTo(BigDecimal.ZERO) <= 0)
+        {
+            return scoreItems.stream()
+                    .map(SeatingScoreItem::getScoreValue)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add)
+                    .divide(BigDecimal.valueOf(scoreItems.size()), 2, RoundingMode.HALF_UP);
+        }
+        return weightedScore.divide(totalWeight, 2, RoundingMode.HALF_UP);
     }
 
     private List<String> hardConflicts(List<SeatingAssignmentResult> assignments,
-            List<SeatStudentRelation> relations, Map<Long, Long> frontRowLimits)
+            List<SeatStudentRelation> relations, Map<Long, Long> frontRowLimits, Map<Long, Integer> deskPairIndexes)
     {
         List<String> conflicts = new ArrayList<>();
         for (SeatingAssignmentResult assignment : assignments)
@@ -472,7 +567,8 @@ public class SeatingEngine
             {
                 continue;
             }
-            if ("NOT_DESKMATE".equals(relation.getRelationType()) && sameDesk(left.getSeat(), right.getSeat()))
+            if ("NOT_DESKMATE".equals(relation.getRelationType())
+                    && sameDesk(left.getSeat(), right.getSeat(), deskPairIndexes))
             {
                 conflicts.add(left.getStudent().getStudentName() + " 与 " + right.getStudent().getStudentName() + " 不能同桌");
             }
@@ -612,13 +708,72 @@ public class SeatingEngine
                 .divide(BigDecimal.valueOf(heights.size()), 2, RoundingMode.HALF_UP);
     }
 
-    private boolean sameDesk(SeatPosition left, SeatPosition right)
+    private boolean sameDesk(SeatPosition left, SeatPosition right, Map<Long, Integer> deskPairIndexes)
     {
+        if (left == null || right == null || left.getSeatId() == null || right.getSeatId() == null)
+        {
+            return false;
+        }
+        Integer leftPairIndex = deskPairIndexes.get(left.getSeatId());
+        Integer rightPairIndex = deskPairIndexes.get(right.getSeatId());
+        if (leftPairIndex != null && rightPairIndex != null)
+        {
+            return leftPairIndex.equals(rightPairIndex);
+        }
         if (!left.getRowIndex().equals(right.getRowIndex()) || Math.abs(left.getColIndex() - right.getColIndex()) != 1)
         {
             return false;
         }
         return Math.min(left.getColIndex(), right.getColIndex()) % 2 == 1;
+    }
+
+    private int sameGenderPairs(List<SeatingAssignmentResult> assignments, Map<Long, Integer> deskPairIndexes)
+    {
+        int sameGenderPairs = 0;
+        for (int i = 0; i < assignments.size(); i++)
+        {
+            for (int j = i + 1; j < assignments.size(); j++)
+            {
+                if (sameDesk(assignments.get(i).getSeat(), assignments.get(j).getSeat(), deskPairIndexes)
+                        && knownSameValue(assignments.get(i).getStudent().getGender(),
+                                assignments.get(j).getStudent().getGender(), "2"))
+                {
+                    sameGenderPairs++;
+                }
+            }
+        }
+        return sameGenderPairs;
+    }
+
+    private int sameScorePairs(List<SeatingAssignmentResult> assignments, Map<Long, Integer> deskPairIndexes)
+    {
+        int sameScorePairs = 0;
+        for (int i = 0; i < assignments.size(); i++)
+        {
+            for (int j = i + 1; j < assignments.size(); j++)
+            {
+                if (sameDesk(assignments.get(i).getSeat(), assignments.get(j).getSeat(), deskPairIndexes)
+                        && knownSameValue(assignments.get(i).getStudent().getScoreLevel(),
+                                assignments.get(j).getStudent().getScoreLevel(), null))
+                {
+                    sameScorePairs++;
+                }
+            }
+        }
+        return sameScorePairs;
+    }
+
+    private boolean knownSameValue(String left, String right, String unknownValue)
+    {
+        if (left == null || right == null)
+        {
+            return false;
+        }
+        if (unknownValue != null && (unknownValue.equals(left) || unknownValue.equals(right)))
+        {
+            return false;
+        }
+        return left.equals(right);
     }
 
     private boolean adjacent(SeatPosition left, SeatPosition right)
@@ -631,6 +786,74 @@ public class SeatingEngine
     private List<SeatRule> safeRules(List<SeatRule> rules)
     {
         return rules == null ? new ArrayList<>() : rules;
+    }
+
+    private Map<Long, Integer> deskPairIndexes(List<SeatPosition> seats)
+    {
+        Map<Long, List<SeatPosition>> rowSeatMap = new HashMap<>();
+        if (seats == null)
+        {
+            return new HashMap<>();
+        }
+        for (SeatPosition seat : seats)
+        {
+            if (seat.getSeatId() == null || seat.getRowIndex() == null || !isUsableSeat(seat))
+            {
+                continue;
+            }
+            rowSeatMap.computeIfAbsent(seat.getRowIndex(), key -> new ArrayList<>()).add(seat);
+        }
+
+        Map<Long, Integer> pairIndexes = new HashMap<>();
+        int pairIndex = 1;
+        for (List<SeatPosition> rowSeats : rowSeatMap.values())
+        {
+            rowSeats.sort(seatComparator());
+            for (int i = 0; i + 1 < rowSeats.size(); i += 2)
+            {
+                pairIndexes.put(rowSeats.get(i).getSeatId(), pairIndex);
+                pairIndexes.put(rowSeats.get(i + 1).getSeatId(), pairIndex);
+                pairIndex++;
+            }
+        }
+        return pairIndexes;
+    }
+
+    private boolean isUsableSeat(SeatPosition seat)
+    {
+        return "0".equals(seat.getSeatType()) && "1".equals(seat.getIsAvailable()) && "0".equals(seat.getStatus());
+    }
+
+    private Map<String, SeatRule> activeRuleMap(List<SeatRule> rules)
+    {
+        Map<String, SeatRule> activeRules = new HashMap<>();
+        for (SeatRule rule : rules)
+        {
+            if (!"1".equals(rule.getEnabled()) || !"0".equals(rule.getStatus()) || rule.getRuleCode() == null
+                    || rule.getRuleCode().isBlank())
+            {
+                continue;
+            }
+            activeRules.put(rule.getRuleCode(), rule);
+        }
+        return activeRules;
+    }
+
+    private BigDecimal weightedPenalty(long penalty, Map<String, SeatRule> activeRules, String ruleCode)
+    {
+        return BigDecimal.valueOf(penalty)
+                .multiply(BigDecimal.valueOf(ruleWeight(activeRules, ruleCode)))
+                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+    }
+
+    private long ruleWeight(Map<String, SeatRule> activeRules, String ruleCode)
+    {
+        SeatRule rule = activeRules.get(ruleCode);
+        if (rule == null || rule.getRuleWeight() == null)
+        {
+            return 100L;
+        }
+        return Math.max(0L, rule.getRuleWeight());
     }
 
     private List<SeatStudentRelation> safeRelations(List<SeatStudentRelation> relations)

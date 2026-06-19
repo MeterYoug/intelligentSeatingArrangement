@@ -303,7 +303,8 @@ public class SeatAssignmentServiceImpl implements ISeatAssignmentService
         SeatPosition seatQuery = new SeatPosition();
         seatQuery.setClassroomId(plan.getClassroomId());
         Map<Long, SeatPosition> seatMap = new HashMap<>();
-        for (SeatPosition seat : seatPositionMapper.selectSeatPositionList(seatQuery))
+        List<SeatPosition> seats = seatPositionMapper.selectSeatPositionList(seatQuery);
+        for (SeatPosition seat : seats)
         {
             seatMap.put(seat.getSeatId(), seat);
         }
@@ -332,7 +333,7 @@ public class SeatAssignmentServiceImpl implements ISeatAssignmentService
         List<SeatStudentRelation> relations = seatStudentRelationMapper.selectSeatStudentRelationList(relationQuery);
 
         BigDecimal oldScore = plan.getTotalScore() == null ? BigDecimal.ZERO : plan.getTotalScore();
-        SeatingResult seatingResult = seatingEngine.evaluate(evaluateAssignments, rules, relations, plan.getPlanId());
+        SeatingResult seatingResult = seatingEngine.evaluate(evaluateAssignments, seats, rules, relations, plan.getPlanId());
         replacePlanScores(plan.getPlanId(), seatingResult);
 
         SeatPlan updatePlan = new SeatPlan();
