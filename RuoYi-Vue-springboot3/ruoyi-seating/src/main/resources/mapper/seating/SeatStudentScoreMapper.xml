@@ -44,7 +44,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="scoreLevel != null and scoreLevel != ''"> and sss.score_level = #{scoreLevel}</if>
             <if test="params.teacherId != null"> and sc.teacher_id = #{params.teacherId}</if>
         </where>
-        order by sss.class_rank is null, sss.class_rank, sss.score_id
+        <choose>
+            <when test="studentNoOrder == 'ASC'">order by sss.student_no asc, sss.score_id</when>
+            <when test="studentNoOrder == 'DESC'">order by sss.student_no desc, sss.score_id</when>
+            <otherwise>order by sss.class_rank is null, sss.class_rank, sss.score_id</otherwise>
+        </choose>
     </select>
 
     <select id="selectSeatStudentScoreByScoreId" parameterType="Long" resultMap="SeatStudentScoreResult">

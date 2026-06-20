@@ -8,6 +8,7 @@
         <el-space>
           <el-button icon="Upload" type="primary" plain @click="handleImport" v-hasPermi="['seating:studentScore:import']">导入成绩</el-button>
           <el-button icon="Download" type="warning" plain @click="handleExport" v-hasPermi="['seating:studentScore:export']">导出成绩</el-button>
+          <el-checkbox v-model="exportByStudentNo">按学号排序导出</el-checkbox>
           <el-button icon="Finished" plain :disabled="exam.isCurrent === '1'" @click="handleSetCurrent" v-hasPermi="['seating:exam:edit']">设为当前</el-button>
           <el-button icon="Refresh" plain @click="handleSyncLevel" v-hasPermi="['seating:studentScore:sync']">同步等级</el-button>
         </el-space>
@@ -49,9 +50,9 @@
       </el-form-item>
     </el-form>
 
-    <el-table v-loading="loading" :data="scoreList" :empty-text="emptyText" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="scoreList" :empty-text="emptyText" :default-sort="{ prop: 'studentNo', order: 'ascending' }" @selection-change="handleSelectionChange" @sort-change="handleSortChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="学号" align="center" prop="studentNo" min-width="110" />
+      <el-table-column label="学号" align="center" prop="studentNo" min-width="110" sortable="custom" />
       <el-table-column label="姓名" align="center" prop="studentNameSnapshot" min-width="110" />
       <el-table-column label="科目成绩" align="left" prop="subjectScores" min-width="300">
         <template #default="scope">
@@ -140,6 +141,7 @@ const loading = ref(false)
 const ids = ref([])
 const total = ref(0)
 const open = ref(false)
+const exportByStudentNo = ref(true)
 
 const data = reactive({
   queryParams: {
@@ -149,7 +151,8 @@ const data = reactive({
     classId: undefined,
     studentNo: undefined,
     studentNameSnapshot: undefined,
-    scoreLevel: undefined
+    scoreLevel: undefined,
+    studentNoOrder: "ASC"
   },
   form: {}
 })
@@ -181,7 +184,8 @@ function getList() {
     classId: queryParams.value.classId,
     studentNo: queryParams.value.studentNo,
     studentNameSnapshot: queryParams.value.studentNameSnapshot,
-    scoreLevel: queryParams.value.scoreLevel
+    scoreLevel: queryParams.value.scoreLevel,
+    studentNoOrder: queryParams.value.studentNoOrder
   }).then(response => {
     scoreList.value = response.rows
     total.value = response.total
@@ -198,11 +202,18 @@ function handleQuery() {
 
 function resetQuery() {
   proxy.resetForm("queryRef")
+  queryParams.value.studentNoOrder = "ASC"
   handleQuery()
 }
 
 function handleSelectionChange(selection) {
   ids.value = selection.map(item => item.scoreId)
+}
+
+function handleSortChange({ prop, order }) {
+  if (prop !== "studentNo") return
+  queryParams.value.studentNoOrder = order === "descending" ? "DESC" : "ASC"
+  handleQuery()
 }
 
 function handleImport() {
@@ -223,7 +234,8 @@ function handleExport() {
     classId: queryParams.value.classId,
     studentNo: queryParams.value.studentNo,
     studentNameSnapshot: queryParams.value.studentNameSnapshot,
-    scoreLevel: queryParams.value.scoreLevel
+    scoreLevel: queryParams.value.scoreLevel,
+    studentNoOrder: exportByStudentNo.value ? "ASC" : undefined
   }, `${exam.value.examName || "学生成绩"}_成绩.xlsx`)
 }
 
