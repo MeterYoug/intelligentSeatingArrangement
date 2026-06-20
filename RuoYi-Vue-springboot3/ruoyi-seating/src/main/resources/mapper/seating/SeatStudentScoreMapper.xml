@@ -45,8 +45,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="params.teacherId != null"> and sc.teacher_id = #{params.teacherId}</if>
         </where>
         <choose>
-            <when test="studentNoOrder == 'ASC'">order by sss.student_no asc, sss.score_id</when>
-            <when test="studentNoOrder == 'DESC'">order by sss.student_no desc, sss.score_id</when>
+            <when test="studentNoOrder == 'ASC'">
+                order by sss.student_no not regexp '[0-9]+$',
+                         cast(regexp_substr(sss.student_no, '[0-9]+$') as unsigned),
+                         sss.student_no, sss.score_id
+            </when>
+            <when test="studentNoOrder == 'DESC'">
+                order by sss.student_no not regexp '[0-9]+$',
+                         cast(regexp_substr(sss.student_no, '[0-9]+$') as unsigned) desc,
+                         sss.student_no desc, sss.score_id desc
+            </when>
             <otherwise>order by sss.class_rank is null, sss.class_rank, sss.score_id</otherwise>
         </choose>
     </select>
