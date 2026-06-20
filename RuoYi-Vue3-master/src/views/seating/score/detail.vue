@@ -63,7 +63,7 @@
           </el-space>
         </template>
       </el-table-column>
-      <el-table-column label="总分" align="center" prop="totalScore" width="100" />
+      <el-table-column label="总分" align="center" prop="totalScore" width="100" sortable="custom" />
       <el-table-column label="排名" align="center" prop="classRank" width="90" />
       <el-table-column label="等级" align="center" prop="scoreLevel" width="90" />
       <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip />
@@ -152,7 +152,8 @@ const data = reactive({
     studentNo: undefined,
     studentNameSnapshot: undefined,
     scoreLevel: undefined,
-    studentNoOrder: "ASC"
+    studentNoOrder: "ASC",
+    totalScoreOrder: undefined
   },
   form: {}
 })
@@ -185,7 +186,8 @@ function getList() {
     studentNo: queryParams.value.studentNo,
     studentNameSnapshot: queryParams.value.studentNameSnapshot,
     scoreLevel: queryParams.value.scoreLevel,
-    studentNoOrder: queryParams.value.studentNoOrder
+    studentNoOrder: queryParams.value.studentNoOrder,
+    totalScoreOrder: queryParams.value.totalScoreOrder
   }).then(response => {
     scoreList.value = response.rows
     total.value = response.total
@@ -203,6 +205,7 @@ function handleQuery() {
 function resetQuery() {
   proxy.resetForm("queryRef")
   queryParams.value.studentNoOrder = "ASC"
+  queryParams.value.totalScoreOrder = undefined
   handleQuery()
 }
 
@@ -211,8 +214,15 @@ function handleSelectionChange(selection) {
 }
 
 function handleSortChange({ prop, order }) {
-  if (prop !== "studentNo") return
-  queryParams.value.studentNoOrder = order === "descending" ? "DESC" : "ASC"
+  if (prop === "studentNo") {
+    queryParams.value.studentNoOrder = order === "descending" ? "DESC" : "ASC"
+    queryParams.value.totalScoreOrder = undefined
+  } else if (prop === "totalScore") {
+    queryParams.value.studentNoOrder = undefined
+    queryParams.value.totalScoreOrder = order === "descending" ? "DESC" : "ASC"
+  } else {
+    return
+  }
   handleQuery()
 }
 
@@ -235,7 +245,8 @@ function handleExport() {
     studentNo: queryParams.value.studentNo,
     studentNameSnapshot: queryParams.value.studentNameSnapshot,
     scoreLevel: queryParams.value.scoreLevel,
-    studentNoOrder: exportByStudentNo.value ? "ASC" : undefined
+    studentNoOrder: exportByStudentNo.value ? "ASC" : queryParams.value.studentNoOrder,
+    totalScoreOrder: exportByStudentNo.value ? undefined : queryParams.value.totalScoreOrder
   }, `${exam.value.examName || "学生成绩"}_成绩.xlsx`)
 }
 

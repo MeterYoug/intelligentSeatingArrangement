@@ -38,6 +38,8 @@ public class SeatStudentScore extends BaseEntity
 
     private String studentNoOrder;
 
+    private String totalScoreOrder;
+
     private String delFlag;
 
     public Long getScoreId()
@@ -160,6 +162,16 @@ public class SeatStudentScore extends BaseEntity
         this.studentNoOrder = studentNoOrder;
     }
 
+    public String getTotalScoreOrder()
+    {
+        return totalScoreOrder;
+    }
+
+    public void setTotalScoreOrder(String totalScoreOrder)
+    {
+        this.totalScoreOrder = totalScoreOrder;
+    }
+
     public String getDelFlag()
     {
         return delFlag;
@@ -186,6 +198,7 @@ public class SeatStudentScore extends BaseEntity
             .append("classRank", getClassRank())
             .append("scoreLevel", getScoreLevel())
             .append("studentNoOrder", getStudentNoOrder())
+            .append("totalScoreOrder", getTotalScoreOrder())
             .append("delFlag", getDelFlag())
             .append("createBy", getCreateBy())
             .append("createTime", getCreateTime())
