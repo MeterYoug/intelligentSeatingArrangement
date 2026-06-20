@@ -7,6 +7,7 @@
       <template #extra>
         <el-space>
           <el-button icon="Upload" type="primary" plain @click="handleImport" v-hasPermi="['seating:studentScore:import']">导入成绩</el-button>
+          <el-button icon="Download" type="warning" plain @click="handleExport" v-hasPermi="['seating:studentScore:export']">导出成绩</el-button>
           <el-button icon="Finished" plain :disabled="exam.isCurrent === '1'" @click="handleSetCurrent" v-hasPermi="['seating:exam:edit']">设为当前</el-button>
           <el-button icon="Refresh" plain @click="handleSyncLevel" v-hasPermi="['seating:studentScore:sync']">同步等级</el-button>
         </el-space>
@@ -210,6 +211,20 @@ function handleImport() {
     return
   }
   proxy.$refs["importScoreRef"].open()
+}
+
+function handleExport() {
+  if (!exam.value.examId) {
+    proxy.$modal.msgError("考试信息未加载")
+    return
+  }
+  proxy.download("seating/student-score/export", {
+    examId: queryParams.value.examId,
+    classId: queryParams.value.classId,
+    studentNo: queryParams.value.studentNo,
+    studentNameSnapshot: queryParams.value.studentNameSnapshot,
+    scoreLevel: queryParams.value.scoreLevel
+  }, `${exam.value.examName || "学生成绩"}_成绩.xlsx`)
 }
 
 function handleSetCurrent() {
