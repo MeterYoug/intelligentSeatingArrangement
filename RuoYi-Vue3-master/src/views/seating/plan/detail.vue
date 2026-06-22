@@ -55,7 +55,7 @@
           :closable="false"
           show-icon
         >
-          <div v-for="item in adjustResult.conflicts" :key="item">{{ item }}</div>
+          <div v-for="item in adjustResult.conflicts" :key="item">{{ formatConflict(item) }}</div>
         </el-alert>
         <el-alert
           v-else-if="adjustResult"
@@ -75,6 +75,13 @@
                   <el-radio-button label="TEACHER">教师视角</el-radio-button>
                   <el-radio-button label="STUDENT">学生视角</el-radio-button>
                 </el-radio-group>
+                <el-button icon="RefreshLeft" :disabled="!undoStack.length" @click="undoAdjustment">撤销</el-button>
+                <el-button icon="RefreshRight" :disabled="!redoStack.length" @click="redoAdjustment">重做</el-button>
+                <el-button :type="selectionMode ? 'primary' : 'default'" icon="Select" @click="toggleSelectionMode">
+                  {{ selectionMode ? `已选择 ${selectedSeatIds.length} 个座位` : "批量选择" }}
+                </el-button>
+                <el-button :disabled="!selectedSeatIds.length" icon="Lock" @click="batchSetLock('1')">批量锁定</el-button>
+                <el-button :disabled="!selectedSeatIds.length" icon="Unlock" @click="batchSetLock('0')">批量解锁</el-button>
                 <el-button icon="Download" @click="exportSeatTable">导出 Excel</el-button>
                 <el-button icon="Picture" @click="exportSeatImage">导出图片</el-button>
                 <el-button icon="Printer" @click="exportSeatPdf">导出 PDF</el-button>
@@ -92,8 +99,9 @@
                       v-for="seat in displayFlatSeats"
                       :key="seat.rowIndex + '-' + seat.colIndex"
                       class="seat-cell"
-                      :class="seatClass(seat)"
+                      :class="[seatClass(seat), { 'seat-selected': isSeatSelected(seat) }]"
                       :draggable="canDrag(seat)"
+                      @click="toggleSeatSelection(seat)"
                       @dragstart="handleDragStart(seat)"
                       @dragend="resetDragging"
                       @dragover.prevent
@@ -141,11 +149,14 @@
           </section>
 
           <section class="score-section">
-            <div class="section-title">未安排学生</div>
+            <div class="section-title section-title-with-tools">
+              <span>未安排学生（{{ unassignedStudents.length }}）</span>
+              <el-input v-model="unassignedKeyword" clearable size="small" placeholder="按姓名或学号查找" />
+            </div>
             <div class="unassigned-panel">
-              <div v-if="unassignedStudents.length" class="student-pool">
+              <div v-if="filteredUnassignedStudents.length" class="student-pool">
                 <div
-                  v-for="student in unassignedStudents"
+                  v-for="student in filteredUnassignedStudents"
                   :key="student.studentId"
                   class="student-chip"
                   draggable="true"
@@ -156,7 +167,7 @@
                   <span class="student-chip-name">{{ student.studentName }}</span>
                 </div>
               </div>
-              <el-empty v-else description="暂无未安排学生" :image-size="48" />
+              <el-empty v-else :description="unassignedStudents.length ? '没有匹配的未安排学生' : '暂无未安排学生'" :image-size="48" />
             </div>
             <div class="section-title">评分明细</div>
             <el-table :data="scoreList" size="small" border>
@@ -167,6 +178,20 @@
                 <template #default="scope">{{ formatScoreDetail(scope.row.detailJson) }}</template>
               </el-table-column>
             </el-table>
+            <div class="section-title">方案差异</div>
+            <el-select v-model="comparisonPlanId" clearable filterable placeholder="选择同班历史方案进行对比" :loading="comparisonLoading" @change="loadComparison">
+              <el-option v-for="item in comparisonPlans" :key="item.planId" :label="item.planName" :value="item.planId" />
+            </el-select>
+            <div v-if="comparisonPlanId" class="comparison-summary">
+              <template v-if="comparisonDiffs.length">
+                <div>与「{{ comparisonPlanName }}」相比，共有 {{ comparisonDiffs.length }} 名学生的座位发生变化。</div>
+                <div v-for="item in comparisonDiffs.slice(0, 6)" :key="item.studentId" class="comparison-item">
+                  {{ item.studentName }}：{{ item.from }} → {{ item.to }}
+                </div>
+                <div v-if="comparisonDiffs.length > 6" class="comparison-more">其余 {{ comparisonDiffs.length - 6 }} 项变化未展开。</div>
+              </template>
+              <span v-else>与「{{ comparisonPlanName }}」相比，学生座位没有变化。</span>
+            </div>
           </section>
         </div>
       </template>
@@ -175,7 +200,7 @@
 </template>
 
 <script setup name="SeatingPlanDetail">
-import { getPlan, confirmPlan, exportSeatTableUrl } from "@/api/seating/plan"
+import { getPlan, listPlan, confirmPlan, exportSeatTableUrl } from "@/api/seating/plan"
 import { listAssignment, savePlanAssignments } from "@/api/seating/assignment"
 import { listScore } from "@/api/seating/score"
 import { getClassroomLayout } from "@/api/seating/position"
@@ -206,6 +231,16 @@ const scoreList = ref([])
 const adjustResult = ref(null)
 const studentList = ref([])
 const viewMode = ref("TEACHER")
+const baseAssignmentSnapshot = ref([])
+const undoStack = ref([])
+const redoStack = ref([])
+const selectionMode = ref(false)
+const selectedSeatIds = ref([])
+const unassignedKeyword = ref("")
+const comparisonPlans = ref([])
+const comparisonPlanId = ref(null)
+const comparisonAssignments = ref([])
+const comparisonLoading = ref(false)
 
 const assignmentMap = computed(() => {
   const map = new Map()
@@ -225,6 +260,13 @@ const studentMap = computed(() => {
 
 const assignedStudentIds = computed(() => new Set(assignmentList.value.map(item => item.studentId)))
 const unassignedStudents = computed(() => studentList.value.filter(item => item.status === "0" && !assignedStudentIds.value.has(item.studentId)))
+const filteredUnassignedStudents = computed(() => {
+  const keyword = unassignedKeyword.value.trim().toLowerCase()
+  if (!keyword) {
+    return unassignedStudents.value
+  }
+  return unassignedStudents.value.filter(item => `${item.studentName || ""}${item.studentNo || ""}`.toLowerCase().includes(keyword))
+})
 const flatSeats = computed(() => seatRows.value.flat())
 const displaySeatRows = computed(() => {
   if (viewMode.value === "STUDENT") {
@@ -240,6 +282,26 @@ const gridStyle = computed(() => ({
 const platformPosition = computed(() => plan.value.platformPosition || "FRONT")
 const viewPlatformPosition = computed(() => viewMode.value === "STUDENT" ? reversePlatformPosition(platformPosition.value) : platformPosition.value)
 const viewModeLabel = computed(() => viewMode.value === "STUDENT" ? "学生视角" : "教师视角")
+const comparisonPlanName = computed(() => comparisonPlans.value.find(item => item.planId === comparisonPlanId.value)?.planName || "所选方案")
+const comparisonDiffs = computed(() => {
+  if (!comparisonPlanId.value) {
+    return []
+  }
+  const currentMap = new Map(assignmentList.value.map(item => [item.studentId, item]))
+  const comparisonMap = new Map(comparisonAssignments.value.map(item => [item.studentId, item]))
+  return [...new Set([...currentMap.keys(), ...comparisonMap.keys()])].map(studentId => {
+    const current = currentMap.get(studentId)
+    const comparison = comparisonMap.get(studentId)
+    const from = formatAssignmentPosition(comparison)
+    const to = formatAssignmentPosition(current)
+    return {
+      studentId,
+      studentName: current?.studentNameSnapshot || comparison?.studentNameSnapshot || "未知学生",
+      from,
+      to
+    }
+  }).filter(item => item.from !== item.to)
+})
 
 function optionLabel(options, value) {
   return options.find(item => item.value === value)?.label || "-"
@@ -311,7 +373,42 @@ function genderClassByValue(gender) {
 
 function canDrag(seat) {
   const assignment = currentAssignment(seat)
-  return !!assignment && assignment.isLocked !== "1"
+  return !selectionMode.value && !!assignment && assignment.isLocked !== "1"
+}
+
+function isSeatSelected(seat) {
+  return selectedSeatIds.value.includes(seat.seatId)
+}
+
+function toggleSelectionMode() {
+  selectionMode.value = !selectionMode.value
+  selectedSeatIds.value = []
+  resetDragging()
+}
+
+function toggleSeatSelection(seat) {
+  if (!selectionMode.value || !currentAssignment(seat)) {
+    return
+  }
+  selectedSeatIds.value = isSeatSelected(seat)
+    ? selectedSeatIds.value.filter(item => item !== seat.seatId)
+    : [...selectedSeatIds.value, seat.seatId]
+}
+
+function batchSetLock(isLocked) {
+  const targetIds = new Set(selectedSeatIds.value)
+  const targetAssignments = assignmentList.value.filter(item => targetIds.has(item.seatId) && item.isLocked !== isLocked)
+  if (!targetAssignments.length) {
+    proxy.$modal.msgWarning(isLocked === "1" ? "所选座位均已锁定" : "所选座位均已解锁")
+    return
+  }
+  recordHistory()
+  targetAssignments.forEach(item => {
+    item.isLocked = isLocked
+  })
+  assignmentList.value = [...assignmentList.value]
+  syncDirty()
+  proxy.$modal.msgSuccess(`已${isLocked === "1" ? "锁定" : "解锁"}${targetAssignments.length} 个座位，保存调整后生效`)
 }
 
 function handleDragStart(seat) {
@@ -360,9 +457,10 @@ function handleDrop(targetSeat) {
       isLocked: "0",
       assignSource: "MANUAL"
     }
+    recordHistory()
     applySeatToAssignment(assignment, targetSeat)
     assignmentList.value = [...assignmentList.value, assignment]
-    markDirty()
+    syncDirty()
     resetDragging()
     return
   }
@@ -378,12 +476,13 @@ function handleDrop(targetSeat) {
     resetDragging()
     return
   }
+  recordHistory()
   applySeatToAssignment(sourceAssignment, targetSeat)
   if (targetAssignment && sourceSeat) {
     applySeatToAssignment(targetAssignment, sourceSeat)
   }
   assignmentList.value = [...assignmentList.value]
-  markDirty()
+  syncDirty()
   resetDragging()
 }
 
@@ -399,9 +498,10 @@ function toggleLock(seat) {
   if (!assignment) {
     return
   }
+  recordHistory()
   assignment.isLocked = assignment.isLocked === "1" ? "0" : "1"
   assignmentList.value = [...assignmentList.value]
-  markDirty()
+  syncDirty()
 }
 
 function clearSeat(seat) {
@@ -414,14 +514,53 @@ function clearSeat(seat) {
     return
   }
   proxy.$modal.confirm(`确认将 ${assignment.studentNameSnapshot} 移出座位？`).then(() => {
+    recordHistory()
     assignmentList.value = assignmentList.value.filter(item => item !== assignment)
-    markDirty()
+    syncDirty()
   }).catch(() => {})
 }
 
-function markDirty() {
-  dirty.value = true
+function cloneAssignments(items = assignmentList.value) {
+  return items.map(item => ({ ...item }))
+}
+
+function assignmentSnapshot(items = assignmentList.value) {
+  return JSON.stringify(items.map(item => ({
+    assignmentId: item.assignmentId || null,
+    studentId: item.studentId,
+    seatId: item.seatId,
+    isLocked: item.isLocked === "1" ? "1" : "0"
+  })).sort((left, right) => String(left.studentId).localeCompare(String(right.studentId))))
+}
+
+function recordHistory() {
+  undoStack.value = [...undoStack.value.slice(-29), cloneAssignments()]
+  redoStack.value = []
+}
+
+function syncDirty() {
+  dirty.value = assignmentSnapshot() !== assignmentSnapshot(baseAssignmentSnapshot.value)
   adjustResult.value = null
+}
+
+function undoAdjustment() {
+  if (!undoStack.value.length) {
+    return
+  }
+  redoStack.value = [...redoStack.value.slice(-29), cloneAssignments()]
+  assignmentList.value = cloneAssignments(undoStack.value.at(-1))
+  undoStack.value = undoStack.value.slice(0, -1)
+  syncDirty()
+}
+
+function redoAdjustment() {
+  if (!redoStack.value.length) {
+    return
+  }
+  undoStack.value = [...undoStack.value.slice(-29), cloneAssignments()]
+  assignmentList.value = cloneAssignments(redoStack.value.at(-1))
+  redoStack.value = redoStack.value.slice(0, -1)
+  syncDirty()
 }
 
 function resetDragging() {
@@ -803,6 +942,35 @@ function formatScoreDetail(detailJson) {
   }
 }
 
+function formatConflict(conflict) {
+  const seats = assignmentList.value.filter(item => item.studentNameSnapshot && String(conflict).includes(item.studentNameSnapshot))
+    .map(item => `${item.studentNameSnapshot}（${formatAssignmentPosition(item)}）`)
+  return seats.length ? `${conflict}。当前座位：${seats.join("、")}` : conflict
+}
+
+function formatAssignmentPosition(assignment) {
+  if (!assignment) {
+    return "未安排"
+  }
+  const seat = flatSeats.value.find(item => item.seatId === assignment.seatId)
+  return seat?.seatCode || `${assignment.rowIndex} 排 ${assignment.colIndex} 列`
+}
+
+function loadComparison() {
+  comparisonAssignments.value = []
+  if (!comparisonPlanId.value) {
+    return
+  }
+  comparisonLoading.value = true
+  listAssignment({ planId: comparisonPlanId.value, pageNum: 1, pageSize: 1000 }).then(response => {
+    comparisonAssignments.value = response.rows || []
+  }).catch(() => {
+    comparisonPlanId.value = null
+  }).finally(() => {
+    comparisonLoading.value = false
+  })
+}
+
 function scoreDetailLabel(key) {
   const labelMap = {
     required: "需满足数量",
@@ -831,13 +999,23 @@ function loadDetail() {
       getClassroomLayout(plan.value.classroomId),
       listAssignment({ planId, pageNum: 1, pageSize: 1000 }),
       listScore({ planId, pageNum: 1, pageSize: 1000 }),
-      listStudent({ classId: plan.value.classId, pageNum: 1, pageSize: 1000 })
+      listStudent({ classId: plan.value.classId, pageNum: 1, pageSize: 1000 }),
+      listPlan({ classId: plan.value.classId, pageNum: 1, pageSize: 1000 })
     ])
-  }).then(([layoutResponse, assignmentResponse, scoreResponse, studentResponse]) => {
+  }).then(([layoutResponse, assignmentResponse, scoreResponse, studentResponse, planResponse]) => {
     normalizeSeats(layoutResponse.data || [])
     assignmentList.value = assignmentResponse.rows || []
     scoreList.value = scoreResponse.rows || []
     studentList.value = studentResponse.rows || []
+    comparisonPlans.value = (planResponse.rows || []).filter(item => item.planId !== plan.value.planId)
+    comparisonPlanId.value = null
+    comparisonAssignments.value = []
+    baseAssignmentSnapshot.value = cloneAssignments(assignmentList.value)
+    undoStack.value = []
+    redoStack.value = []
+    selectionMode.value = false
+    selectedSeatIds.value = []
+    unassignedKeyword.value = ""
     dirty.value = false
   }).catch(() => {
     loadError.value = true
@@ -917,6 +1095,17 @@ loadDetail()
   font-weight: 600;
 }
 
+.section-title-with-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.section-title-with-tools .el-input {
+  width: 180px;
+}
+
 .score-section .section-title + .section-title {
   margin-top: 16px;
 }
@@ -926,7 +1115,9 @@ loadDetail()
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  flex: 0 0 auto;
+  flex: 1 1 auto;
+  min-width: 0;
+  justify-content: flex-end;
 }
 
 .view-toggle {
@@ -973,6 +1164,10 @@ loadDetail()
 .seat-assigned {
   border-color: #409eff;
   background: #ecf5ff;
+}
+
+.seat-selected {
+  box-shadow: 0 0 0 2px #409eff;
 }
 
 .seat-locked {
@@ -1104,6 +1299,25 @@ loadDetail()
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.comparison-summary {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid #ebeef5;
+  border-radius: 6px;
+  color: #606266;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.comparison-item {
+  margin-top: 4px;
+}
+
+.comparison-more {
+  margin-top: 4px;
+  color: #909399;
 }
 
 .seat-placeholder {
