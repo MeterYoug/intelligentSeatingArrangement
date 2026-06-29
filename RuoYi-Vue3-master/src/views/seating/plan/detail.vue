@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container">
     <el-page-header title="返回" @back="goBack">
       <template #content>
@@ -229,7 +229,7 @@
 </template>
 
 <script setup name="SeatingPlanDetail">
-import { getPlan, listPlan, confirmPlan, exportSeatTableUrl } from "@/api/seating/plan"
+import { getPlan, listPlan, confirmPlan, exportSeatTableUrl, exportSeatPdfUrl } from "@/api/seating/plan"
 import { listAssignment, savePlanAssignments } from "@/api/seating/assignment"
 import { listScore } from "@/api/seating/score"
 import { getClassroomLayout } from "@/api/seating/position"
@@ -710,15 +710,8 @@ function exportSeatPdf() {
     return
   }
 
-  const canvas = buildSeatImageCanvas()
-  const imageUrl = canvas.toDataURL("image/png")
-  const printWindow = window.open("", "_blank")
-  if (!printWindow) {
-    proxy.$modal.msgWarning("浏览器阻止了打印窗口，请允许弹窗后重试")
-    return
-  }
-  printWindow.document.write(buildPrintHtml(imageUrl))
-  printWindow.document.close()
+  const planId = route.params.planId
+  proxy.download(exportSeatPdfUrl(planId), { viewMode: viewMode.value }, buildExportFilename("pdf"))
 }
 
 function canExportSnapshot() {
@@ -727,7 +720,6 @@ function canExportSnapshot() {
   }
   return true
 }
-
 function buildSeatImageCanvas() {
   const scale = window.devicePixelRatio || 2
   const padding = 32
@@ -824,8 +816,7 @@ function drawImageHeader(ctx, padding) {
     `班级：${plan.value.className || "-"}`,
     `教室：${plan.value.classroomName || "-"}`,
     `视角：${viewModeLabel.value}`,
-    `总评分：${plan.value.totalScore ?? "-"}`,
-    `导出时间：${parseTime(new Date(), "{y}-{m}-{d} {h}:{i}")}`
+    `总评分：${plan.value.totalScore ?? "-"}`
   ].join("    ")
   drawTextWithEllipsis(ctx, meta, padding, padding + 38, 860)
 }
@@ -959,35 +950,6 @@ function downloadBlob(blob, filename) {
   URL.revokeObjectURL(url)
 }
 
-function buildPrintHtml(imageUrl) {
-  const title = escapeHtml(buildExportTitle())
-  return `<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>${title}</title>
-  <style>
-    @page { size: A4 landscape; margin: 10mm; }
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: Arial, "Microsoft YaHei", sans-serif; color: #303133; background: #ffffff; }
-    .print-page { width: 100%; }
-    img { display: block; width: 100%; height: auto; }
-    @media print { body { print-color-adjust: exact; -webkit-print-color-adjust: exact; } }
-  </style>
-</head>
-<body>
-  <div class="print-page">
-    <img src="${imageUrl}" alt="${title}">
-  </div>
-  <script>
-    window.onload = function() {
-      window.focus();
-      window.print();
-    };
-  <\/script>
-</body>
-</html>`
-}
 
 function buildExportFilename(extension) {
   return `${sanitizeFilename(buildExportTitle())}.${extension}`
@@ -999,18 +961,9 @@ function buildExportTitle() {
 
 function sanitizeFilename(value) {
   const filename = String(value || "座位方案")
-    .replace(/[\\/:*?"<>|]/g, "_")
+    .replace(/[\/:*?"<>|]/g, "_")
     .replace(/[.\s]+$/g, "")
   return filename || "座位方案"
-}
-
-function escapeHtml(value) {
-  return String(value || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;")
 }
 
 function formatScoreChange(scoreChange) {
@@ -1529,5 +1482,9 @@ loadDetail()
   }
 }
 </style>
+
+
+
+
 
 

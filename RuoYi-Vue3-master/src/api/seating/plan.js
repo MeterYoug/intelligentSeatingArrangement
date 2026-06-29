@@ -57,6 +57,11 @@ export function exportSeatTableUrl(planId) {
   return 'seating/plan/' + planId + '/export-seat-table'
 }
 
+// 导出当前方案 PDF 座位表
+export function exportSeatPdfUrl(planId) {
+  return 'seating/plan/' + planId + '/export-seat-pdf'
+}
+
 // 修改排座方案
 export function updatePlan(data) {
   return request({

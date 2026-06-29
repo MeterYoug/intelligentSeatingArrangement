@@ -35,18 +35,22 @@ import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.SecurityUtils;
+import com.ruoyi.common.utils.file.FileUtils;
+import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.seating.domain.SeatClass;
 import com.ruoyi.seating.domain.SeatClassroom;
 import com.ruoyi.seating.domain.SeatAssignment;
 import com.ruoyi.seating.domain.SeatPlan;
 import com.ruoyi.seating.domain.SeatPlanSeatExportRow;
 import com.ruoyi.seating.domain.SeatPosition;
+import com.ruoyi.seating.domain.SeatStudent;
 import com.ruoyi.seating.service.ISeatAssignmentService;
 import com.ruoyi.seating.service.ISeatClassService;
 import com.ruoyi.seating.service.ISeatClassroomService;
 import com.ruoyi.seating.service.ISeatPlanService;
 import com.ruoyi.seating.service.ISeatPositionService;
-import com.ruoyi.common.utils.poi.ExcelUtil;
+import com.ruoyi.seating.service.ISeatStudentService;
+import com.ruoyi.seating.support.SeatPlanPdfExporter;
 import com.ruoyi.common.core.page.TableDataInfo;
 
 /**
@@ -73,6 +77,11 @@ public class SeatPlanController extends BaseController
 
     @Autowired
     private ISeatAssignmentService seatAssignmentService;
+
+    @Autowired
+    private ISeatStudentService seatStudentService;
+
+    private final SeatPlanPdfExporter seatPlanPdfExporter = new SeatPlanPdfExporter();
 
     /**
      * 查询排座方案列表
@@ -132,6 +141,66 @@ public class SeatPlanController extends BaseController
     }
 
     /**
+     * 导出当前方案 PDF 座位表
+     */
+    @PreAuthorize("@ss.hasPermi('seating:plan:export')")
+    @Log(title = "座位表", businessType = BusinessType.EXPORT)
+    @PostMapping("/{planId}/export-seat-pdf")
+    public void exportSeatPdf(HttpServletResponse response, @PathVariable("planId") Long planId, String viewMode)
+    {
+        SeatPlan plan = checkPlanAccess(planId);
+        SeatPosition positionQuery = new SeatPosition();
+        positionQuery.setClassroomId(plan.getClassroomId());
+        List<SeatPosition> positions = seatPositionService.selectSeatPositionList(positionQuery);
+        if (positions.isEmpty())
+        {
+            throw new ServiceException("教室没有座位布局");
+        }
+
+        SeatAssignment assignmentQuery = new SeatAssignment();
+        assignmentQuery.setPlanId(planId);
+        List<SeatAssignment> assignments = seatAssignmentService.selectSeatAssignmentList(assignmentQuery);
+        Map<Long, SeatAssignment> assignmentMap = new HashMap<>();
+        for (SeatAssignment assignment : assignments)
+        {
+            assignmentMap.put(assignment.getSeatId(), assignment);
+        }
+
+        SeatStudent studentQuery = new SeatStudent();
+        studentQuery.setClassId(plan.getClassId());
+        List<SeatStudent> students = seatStudentService.selectSeatStudentList(studentQuery);
+        Map<Long, SeatStudent> studentMap = new HashMap<>();
+        for (SeatStudent student : students)
+        {
+            studentMap.put(student.getStudentId(), student);
+        }
+
+        SeatClassroom classroom = seatClassroomService.selectSeatClassroomByClassroomId(plan.getClassroomId());
+        String normalizedViewMode = normalizeViewMode(viewMode);
+        byte[] pdfBytes = seatPlanPdfExporter.exportSeatPlanPdf(plan, classroom, positions, assignmentMap, studentMap,
+                normalizedViewMode);
+        try
+        {
+            FileUtils.setAttachmentResponseHeader(response,
+                    plan.getPlanName() + "-" + resolveViewModeLabel(normalizedViewMode) + "-座位表.pdf");
+        }
+        catch (Exception e)
+        {
+            throw new ServiceException("设置 PDF 下载名称失败：" + e.getMessage());
+        }
+        response.setContentType("application/pdf");
+        response.setContentLength(pdfBytes.length);
+        try
+        {
+            response.getOutputStream().write(pdfBytes);
+        }
+        catch (Exception e)
+        {
+            throw new ServiceException("导出座位表 PDF 失败：" + e.getMessage());
+        }
+    }
+
+    /**
      * 获取排座方案详细信息
      */
     @PreAuthorize("@ss.hasPermi('seating:plan:query')")
@@ -140,7 +209,6 @@ public class SeatPlanController extends BaseController
     {
         return success(checkPlanAccess(planId));
     }
-
     /**
      * 新增排座方案
      */
