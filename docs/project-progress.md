@@ -16,6 +16,7 @@
 - 2026-06-29 已补齐交付基线文档 `docs/delivery-baseline.md`，把演示数据、部署说明和稳定回归清单统一收口。
 - 2026-06-29 已重新执行后端 `mvn -DskipTests compile` 与前端 `npm run build:prod`，两端验证均通过。
 - 2026-06-29 已补充座位方案详情页动作状态回归测试，新增“启用中禁止确认”和“无座位布局禁止导出”两条覆盖，`node --test` 与前端构建均通过。
+- 2026-06-29 继续补充座位方案详情页动作状态回归测试，`node --test` 通过；重新执行 `npm run build:prod` 时仍受仓库既有的 Vite `index.html` 绝对路径 emitted chunk 问题阻断。
 
 ## 2026-06-27 座位方案详情页 Excel 导出外圈标注补齐
 

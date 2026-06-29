@@ -1,4 +1,4 @@
-﻿import test from 'node:test'
+import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createPlanDetailActionState, getPlanDetailBlockedMessage } from '../detailActionState.js'
 
@@ -61,6 +61,53 @@ test('locks all high-frequency actions while save is in progress', () => {
   assert.equal(getPlanDetailBlockedMessage('save', state), '正在保存调整，请稍后再试')
 })
 
+test('locks all high-frequency actions while loading', () => {
+  const state = createPlanDetailActionState({
+    loading: true,
+    saving: false,
+    confirming: false,
+    dirty: true,
+    undoCount: 3,
+    redoCount: 2,
+    selectedSeatCount: 2,
+    seatCount: 12,
+    planStatus: 'DRAFT'
+  })
+
+  assert.equal(state.undoDisabled, true)
+  assert.equal(state.redoDisabled, true)
+  assert.equal(state.selectionToggleDisabled, true)
+  assert.equal(state.batchLockDisabled, true)
+  assert.equal(state.batchUnlockDisabled, true)
+  assert.equal(state.saveDisabled, true)
+  assert.equal(state.confirmDisabled, true)
+  assert.equal(state.exportDisabled, true)
+  assert.equal(getPlanDetailBlockedMessage('undo', state), '方案正在加载，请稍后再试')
+})
+
+test('locks all high-frequency actions while confirm is in progress', () => {
+  const state = createPlanDetailActionState({
+    loading: false,
+    saving: false,
+    confirming: true,
+    dirty: false,
+    undoCount: 3,
+    redoCount: 2,
+    selectedSeatCount: 2,
+    seatCount: 12,
+    planStatus: 'DRAFT'
+  })
+
+  assert.equal(state.undoDisabled, true)
+  assert.equal(state.redoDisabled, true)
+  assert.equal(state.selectionToggleDisabled, true)
+  assert.equal(state.batchLockDisabled, true)
+  assert.equal(state.batchUnlockDisabled, true)
+  assert.equal(state.saveDisabled, true)
+  assert.equal(state.confirmDisabled, true)
+  assert.equal(state.exportDisabled, true)
+  assert.equal(getPlanDetailBlockedMessage('confirm', state), '正在确认方案，请稍后再试')
+})
 test('blocks confirm when the plan is already active', () => {
   const state = createPlanDetailActionState({
     loading: false,
