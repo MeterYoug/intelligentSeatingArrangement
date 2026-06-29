@@ -60,3 +60,37 @@ test('locks all high-frequency actions while save is in progress', () => {
   assert.equal(state.saveDisabled, true)
   assert.equal(getPlanDetailBlockedMessage('save', state), '正在保存调整，请稍后再试')
 })
+
+test('blocks confirm when the plan is already active', () => {
+  const state = createPlanDetailActionState({
+    loading: false,
+    saving: false,
+    confirming: false,
+    dirty: false,
+    undoCount: 0,
+    redoCount: 0,
+    selectedSeatCount: 0,
+    seatCount: 12,
+    planStatus: 'ACTIVE'
+  })
+
+  assert.equal(state.confirmDisabled, true)
+  assert.equal(getPlanDetailBlockedMessage('confirm', state), '当前方案已启用，无需重复确认')
+})
+
+test('blocks export when there is no seat layout', () => {
+  const state = createPlanDetailActionState({
+    loading: false,
+    saving: false,
+    confirming: false,
+    dirty: false,
+    undoCount: 0,
+    redoCount: 0,
+    selectedSeatCount: 0,
+    seatCount: 0,
+    planStatus: 'DRAFT'
+  })
+
+  assert.equal(state.exportDisabled, true)
+  assert.equal(getPlanDetailBlockedMessage('export', state), '暂无座位布局可导出')
+})
