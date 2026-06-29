@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="app-container">
     <el-page-header title="返回" @back="goBack">
       <template #content>
@@ -68,87 +68,107 @@
 
         <div class="detail-layout">
           <section class="seat-section">
-            <div class="section-header">
-              <div class="section-title">座位表</div>
-              <div class="section-actions">
-                <el-radio-group v-model="viewMode" size="small" class="view-toggle">
-                  <el-radio-button label="TEACHER">教师视角</el-radio-button>
-                  <el-radio-button label="STUDENT">学生视角</el-radio-button>
-                </el-radio-group>
-                <el-button icon="RefreshLeft" :disabled="!undoStack.length" @click="undoAdjustment">撤销</el-button>
-                <el-button icon="RefreshRight" :disabled="!redoStack.length" @click="redoAdjustment">重做</el-button>
-                <el-button :type="selectionMode ? 'primary' : 'default'" icon="Select" @click="toggleSelectionMode">
-                  {{ selectionMode ? `已选择 ${selectedSeatIds.length} 个座位` : "批量选择" }}
+  <div class="section-header">
+    <div class="section-title">座位表</div>
+    <div class="section-actions">
+      <el-radio-group v-model="viewMode" size="small" class="view-toggle">
+        <el-radio-button value="TEACHER">教师视角</el-radio-button>
+        <el-radio-button value="STUDENT">学生视角</el-radio-button>
+      </el-radio-group>
+      <el-button icon="RefreshLeft" :disabled="actionState.undoDisabled" @click="undoAdjustment">撤销</el-button>
+      <el-button icon="RefreshRight" :disabled="actionState.redoDisabled" @click="redoAdjustment">重做</el-button>
+      <el-button :type="selectionMode ? 'primary' : 'default'" icon="Select" :disabled="actionState.selectionToggleDisabled" @click="toggleSelectionMode">
+        {{ selectionMode ? `已选择 ${selectedSeatIds.length} 个座位` : "批量选择" }}
+      </el-button>
+      <el-button :disabled="actionState.batchLockDisabled" icon="Lock" @click="batchSetLock('1')">批量锁定</el-button>
+      <el-button :disabled="actionState.batchUnlockDisabled" icon="Unlock" @click="batchSetLock('0')">批量解锁</el-button>
+      <el-button icon="Download" :disabled="actionState.exportDisabled" @click="exportSeatTable">导出 Excel</el-button>
+      <el-button icon="Picture" :disabled="actionState.exportDisabled" @click="exportSeatImage">导出图片</el-button>
+      <el-button icon="Printer" :disabled="actionState.exportDisabled" @click="exportSeatPdf">导出 PDF</el-button>
+      <el-button v-if="plan.planStatus !== 'ACTIVE'" type="success" icon="CircleCheck" :loading="confirming" :disabled="actionState.confirmDisabled" @click="confirmCurrentPlan">确认方案</el-button>
+      <el-button type="primary" icon="Check" :loading="saving" :disabled="actionState.saveDisabled" @click="saveAssignments">保存调整</el-button>
+    </div>
+  </div>
+  <div class="classroom-view">
+    <div class="classroom-body">
+      <div v-if="viewPlatformPosition === 'LEFT'" class="platform platform-vertical">讲台</div>
+      <div class="classroom-main">
+        <div v-if="viewPlatformPosition === 'FRONT'" class="platform platform-horizontal">讲台</div>
+        <div class="seat-grid-shell">
+        <div class="seat-grid-corner" aria-hidden="true"></div>
+        <div class="seat-column-labels" :style="gridStyle" aria-hidden="true">
+          <div
+            v-for="(label, index) in displayColumnLabels"
+            :key="`col-${index}`"
+            class="seat-grid-label seat-column-label"
+          >
+            {{ label }}
+          </div>
+        </div>
+        <div class="seat-row-labels" aria-hidden="true">
+          <div
+            v-for="(label, index) in displayRowLabels"
+            :key="`row-${index}`"
+            class="seat-grid-label seat-row-label"
+          >
+            {{ label }}
+          </div>
+        </div>
+        <div class="seat-grid" :style="gridStyle">
+          <div
+            v-for="seat in displayFlatSeats"
+            :key="seat.rowIndex + '-' + seat.colIndex"
+            class="seat-cell"
+            :class="[seatClass(seat), { 'seat-selected': isSeatSelected(seat) }]"
+            :draggable="canDrag(seat)"
+            @click="toggleSeatSelection(seat)"
+            @dragstart="handleDragStart(seat)"
+            @dragend="resetDragging"
+            @dragover.prevent
+            @drop.prevent="handleDrop(seat)"
+          >
+            <template v-if="seat.seatType === '0' && seat.isAvailable === '1'">
+              <div class="seat-code">{{ seat.seatCode || seat.rowIndex + '-' + seat.colIndex }}</div>
+              <div v-if="currentAssignment(seat)" class="student-name">
+                <span :class="['gender-tag', genderClass(currentAssignment(seat))]">
+                  {{ genderLabel(currentAssignment(seat)) }}
+                </span>
+                <span class="student-text">{{ currentAssignment(seat).studentNameSnapshot }}</span>
+              </div>
+              <div v-else class="student-name">空座</div>
+              <div v-if="currentAssignment(seat)" class="seat-actions">
+                <el-button
+                  class="seat-action-button"
+                  link
+                  :icon="currentAssignment(seat)?.isLocked === '1' ? 'Lock' : 'Unlock'"
+                  @click.stop="toggleLock(seat)"
+                >
+                  {{ currentAssignment(seat)?.isLocked === "1" ? "已锁定" : "锁定" }}
                 </el-button>
-                <el-button :disabled="!selectedSeatIds.length" icon="Lock" @click="batchSetLock('1')">批量锁定</el-button>
-                <el-button :disabled="!selectedSeatIds.length" icon="Unlock" @click="batchSetLock('0')">批量解锁</el-button>
-                <el-button icon="Download" @click="exportSeatTable">导出 Excel</el-button>
-                <el-button icon="Picture" @click="exportSeatImage">导出图片</el-button>
-                <el-button icon="Printer" @click="exportSeatPdf">导出 PDF</el-button>
-                <el-button v-if="plan.planStatus !== 'ACTIVE'" type="success" icon="CircleCheck" :loading="confirming" @click="confirmCurrentPlan">确认方案</el-button>
-                <el-button type="primary" icon="Check" :loading="saving" :disabled="!dirty" @click="saveAssignments">保存调整</el-button>
+                <el-button
+                  class="seat-action-button"
+                  link
+                  type="danger"
+                  icon="Close"
+                  @click.stop="clearSeat(seat)"
+                >
+                  清空
+                </el-button>
               </div>
-            </div>
-            <div class="classroom-view">
-              <div class="classroom-body">
-                <div v-if="viewPlatformPosition === 'LEFT'" class="platform platform-vertical">讲台</div>
-                <div class="classroom-main">
-                  <div v-if="viewPlatformPosition === 'FRONT'" class="platform platform-horizontal">讲台</div>
-                  <div class="seat-grid" :style="gridStyle">
-                    <div
-                      v-for="seat in displayFlatSeats"
-                      :key="seat.rowIndex + '-' + seat.colIndex"
-                      class="seat-cell"
-                      :class="[seatClass(seat), { 'seat-selected': isSeatSelected(seat) }]"
-                      :draggable="canDrag(seat)"
-                      @click="toggleSeatSelection(seat)"
-                      @dragstart="handleDragStart(seat)"
-                      @dragend="resetDragging"
-                      @dragover.prevent
-                      @drop.prevent="handleDrop(seat)"
-                    >
-                      <template v-if="seat.seatType === '0' && seat.isAvailable === '1'">
-                        <div class="seat-code">{{ seat.seatCode || seat.rowIndex + '-' + seat.colIndex }}</div>
-                        <div v-if="currentAssignment(seat)" class="student-name">
-                          <span :class="['gender-tag', genderClass(currentAssignment(seat))]">
-                            {{ genderLabel(currentAssignment(seat)) }}
-                          </span>
-                          <span class="student-text">{{ currentAssignment(seat).studentNameSnapshot }}</span>
-                        </div>
-                        <div v-else class="student-name">空座</div>
-                        <div v-if="currentAssignment(seat)" class="seat-actions">
-                          <el-button
-                            class="seat-action-button"
-                            link
-                            :icon="currentAssignment(seat)?.isLocked === '1' ? 'Lock' : 'Unlock'"
-                            @click.stop="toggleLock(seat)"
-                          >
-                            {{ currentAssignment(seat)?.isLocked === "1" ? "已锁定" : "锁定" }}
-                          </el-button>
-                          <el-button
-                            class="seat-action-button"
-                            link
-                            type="danger"
-                            icon="Close"
-                            @click.stop="clearSeat(seat)"
-                          >
-                            空座
-                          </el-button>
-                        </div>
-                      </template>
-                      <template v-else>
-                        <div class="seat-placeholder">{{ seat.seatType === "2" ? "过道" : "不可用" }}</div>
-                      </template>
-                    </div>
-                  </div>
-                  <div v-if="viewPlatformPosition === 'BACK'" class="platform platform-horizontal">讲台</div>
-                </div>
-                <div v-if="viewPlatformPosition === 'RIGHT'" class="platform platform-vertical">讲台</div>
-              </div>
-            </div>
-          </section>
-
-          <section class="score-section">
+            </template>
+            <template v-else>
+              <div class="seat-placeholder">{{ seat.seatType === "2" ? "空座" : "不可用" }}</div>
+            </template>
+          </div>
+        </div>
+      </div>
+    </div>
+      <div v-if="viewPlatformPosition === 'BACK'" class="platform platform-horizontal">讲台</div>
+    </div>
+      <div v-if="viewPlatformPosition === 'RIGHT'" class="platform platform-vertical">讲台</div>
+    </div>
+</section>
+<section class="score-section">
             <div class="section-title section-title-with-tools">
               <span>未安排学生（{{ unassignedStudents.length }}）</span>
               <el-input v-model="unassignedKeyword" clearable size="small" placeholder="按姓名或学号查找" />
@@ -174,23 +194,32 @@
               <el-table-column label="规则" prop="ruleName" min-width="130" show-overflow-tooltip />
               <el-table-column label="得分" prop="scoreValue" width="80" align="center" />
               <el-table-column label="扣分" prop="penaltyValue" width="80" align="center" />
-              <el-table-column label="明细" min-width="180" show-overflow-tooltip>
-                <template #default="scope">{{ formatScoreDetail(scope.row.detailJson) }}</template>
+              <el-table-column label="说明" min-width="180" show-overflow-tooltip>
+                <template #default="scope">{{ formatScoreDetail(scope.row) }}</template>
               </el-table-column>
             </el-table>
             <div class="section-title">方案差异</div>
             <el-select v-model="comparisonPlanId" clearable filterable placeholder="选择同班历史方案进行对比" :loading="comparisonLoading" @change="loadComparison">
-              <el-option v-for="item in comparisonPlans" :key="item.planId" :label="item.planName" :value="item.planId" />
+              <el-option v-for="item in comparisonPlans" :key="item.planId" :label="formatComparisonPlanLabel(item)" :value="item.planId" />
             </el-select>
             <div v-if="comparisonPlanId" class="comparison-summary">
               <template v-if="comparisonDiffs.length">
-                <div>与「{{ comparisonPlanName }}」相比，共有 {{ comparisonDiffs.length }} 名学生的座位发生变化。</div>
-                <div v-for="item in comparisonDiffs.slice(0, 6)" :key="item.studentId" class="comparison-item">
-                  {{ item.studentName }}：{{ item.from }} → {{ item.to }}
+                <div class="comparison-summary-text">与 {{ comparisonPlanLabel }} 对比，{{ comparisonDiffs.length }} 名学生座位变动。</div>
+                <div class="comparison-list">
+                  <div v-for="item in comparisonDiffs" :key="item.studentId" class="comparison-row">
+                    <div class="comparison-student" :title="item.studentName">{{ item.studentName }}</div>
+                    <div class="comparison-position comparison-position-from">
+                      <span class="comparison-position-label">原</span>
+                      <span class="comparison-position-value" :title="item.from">{{ item.from }}</span>
+                    </div>
+                    <div class="comparison-position comparison-position-to">
+                      <span class="comparison-position-label">现</span>
+                      <span class="comparison-position-value" :title="item.to">{{ item.to }}</span>
+                    </div>
+                  </div>
                 </div>
-                <div v-if="comparisonDiffs.length > 6" class="comparison-more">其余 {{ comparisonDiffs.length - 6 }} 项变化未展开。</div>
               </template>
-              <span v-else>与「{{ comparisonPlanName }}」相比，学生座位没有变化。</span>
+              <span v-else>与 {{ comparisonPlanLabel }} 对比，学生座位无变化。</span>
             </div>
           </section>
         </div>
@@ -206,6 +235,9 @@ import { listScore } from "@/api/seating/score"
 import { getClassroomLayout } from "@/api/seating/position"
 import { listStudent } from "@/api/seating/student"
 import { parseTime } from "@/utils/ruoyi"
+import { createPlanDetailActionState, getPlanDetailBlockedMessage } from "./detailActionState"
+import { formatPlanConflictText, formatPlanScoreDetailText } from "./detailReadableText"
+import { formatAssignmentPositionReadable } from "./detailComparisonText"
 
 const route = useRoute()
 const router = useRouter()
@@ -221,7 +253,7 @@ const loading = ref(true)
 const loadError = ref(false)
 const saving = ref(false)
 const confirming = ref(false)
-const dirty = ref(false)
+const dirty = computed(() => assignmentSnapshot() !== assignmentSnapshot(baseAssignmentSnapshot.value))
 const draggingSeatId = ref(null)
 const draggingStudentId = ref(null)
 const plan = ref({})
@@ -275,6 +307,11 @@ const displaySeatRows = computed(() => {
   return seatRows.value
 })
 const displayFlatSeats = computed(() => displaySeatRows.value.flat())
+const displayRowLabels = computed(() => displaySeatRows.value.map((row, index) => row[0]?.rowIndex ?? index + 1))
+const displayColumnLabels = computed(() => {
+  const firstRow = displaySeatRows.value.find(row => row.length) || []
+  return firstRow.map(seat => seat.colIndex)
+})
 const maxColCount = computed(() => displaySeatRows.value.reduce((max, row) => Math.max(max, row.length), 1))
 const gridStyle = computed(() => ({
   gridTemplateColumns: `repeat(${maxColCount.value}, minmax(88px, 112px))`
@@ -282,7 +319,10 @@ const gridStyle = computed(() => ({
 const platformPosition = computed(() => plan.value.platformPosition || "FRONT")
 const viewPlatformPosition = computed(() => viewMode.value === "STUDENT" ? reversePlatformPosition(platformPosition.value) : platformPosition.value)
 const viewModeLabel = computed(() => viewMode.value === "STUDENT" ? "学生视角" : "教师视角")
-const comparisonPlanName = computed(() => comparisonPlans.value.find(item => item.planId === comparisonPlanId.value)?.planName || "所选方案")
+const comparisonPlanLabel = computed(() => {
+  const planItem = comparisonPlans.value.find(item => String(item.planId) === String(comparisonPlanId.value))
+  return planItem ? formatComparisonPlanLabel(planItem) : "所选方案"
+})
 const comparisonDiffs = computed(() => {
   if (!comparisonPlanId.value) {
     return []
@@ -292,8 +332,8 @@ const comparisonDiffs = computed(() => {
   return [...new Set([...currentMap.keys(), ...comparisonMap.keys()])].map(studentId => {
     const current = currentMap.get(studentId)
     const comparison = comparisonMap.get(studentId)
-    const from = formatAssignmentPosition(comparison)
-    const to = formatAssignmentPosition(current)
+    const from = formatAssignmentPositionReadable(comparison)
+    const to = formatAssignmentPositionReadable(current)
     return {
       studentId,
       studentName: current?.studentNameSnapshot || comparison?.studentNameSnapshot || "未知学生",
@@ -303,8 +343,24 @@ const comparisonDiffs = computed(() => {
   }).filter(item => item.from !== item.to)
 })
 
+const actionState = computed(() => createPlanDetailActionState({
+  loading: loading.value,
+  saving: saving.value,
+  confirming: confirming.value,
+  dirty: dirty.value,
+  undoCount: undoStack.value.length,
+  redoCount: redoStack.value.length,
+  selectedSeatCount: selectedSeatIds.value.length,
+  seatCount: flatSeats.value.length,
+  planStatus: plan.value.planStatus
+}))
+
 function optionLabel(options, value) {
   return options.find(item => item.value === value)?.label || "-"
+}
+
+function formatComparisonPlanLabel(item) {
+  return `${item.planName || "方案"} · #${item.planId}`
 }
 
 function goBack() {
@@ -380,7 +436,19 @@ function isSeatSelected(seat) {
   return selectedSeatIds.value.includes(seat.seatId)
 }
 
+function guardPlanAction(action) {
+  const message = getPlanDetailBlockedMessage(action, actionState.value)
+  if (message) {
+    proxy.$modal.msgWarning(message)
+    return true
+  }
+  return false
+}
+
 function toggleSelectionMode() {
+  if (guardPlanAction("selection")) {
+    return
+  }
   selectionMode.value = !selectionMode.value
   selectedSeatIds.value = []
   resetDragging()
@@ -396,6 +464,9 @@ function toggleSeatSelection(seat) {
 }
 
 function batchSetLock(isLocked) {
+  if (guardPlanAction(isLocked === "1" ? "batchLock" : "batchUnlock")) {
+    return
+  }
   const targetIds = new Set(selectedSeatIds.value)
   const targetAssignments = assignmentList.value.filter(item => targetIds.has(item.seatId) && item.isLocked !== isLocked)
   if (!targetAssignments.length) {
@@ -539,12 +610,11 @@ function recordHistory() {
 }
 
 function syncDirty() {
-  dirty.value = assignmentSnapshot() !== assignmentSnapshot(baseAssignmentSnapshot.value)
   adjustResult.value = null
 }
 
 function undoAdjustment() {
-  if (!undoStack.value.length) {
+  if (guardPlanAction("undo")) {
     return
   }
   redoStack.value = [...redoStack.value.slice(-29), cloneAssignments()]
@@ -554,7 +624,7 @@ function undoAdjustment() {
 }
 
 function redoAdjustment() {
-  if (!redoStack.value.length) {
+  if (guardPlanAction("redo")) {
     return
   }
   undoStack.value = [...undoStack.value.slice(-29), cloneAssignments()]
@@ -569,6 +639,9 @@ function resetDragging() {
 }
 
 function saveAssignments() {
+  if (guardPlanAction("save")) {
+    return
+  }
   saving.value = true
   const planId = route.params.planId
   const payload = assignmentList.value.map(item => ({
@@ -584,16 +657,16 @@ function saveAssignments() {
     } else {
       proxy.$modal.msgSuccess("保存成功")
     }
-    dirty.value = false
     loadDetail()
+  }).catch(() => {
+    proxy.$modal.msgError("保存调整失败，请稍后重试")
   }).finally(() => {
     saving.value = false
   })
 }
 
 function confirmCurrentPlan() {
-  if (dirty.value) {
-    proxy.$modal.msgWarning("请先保存调整后再确认方案")
+  if (guardPlanAction("confirm")) {
     return
   }
   confirming.value = true
@@ -602,14 +675,15 @@ function confirmCurrentPlan() {
   }).then(() => {
     proxy.$modal.msgSuccess("确认成功")
     loadDetail()
+  }).catch(() => {
+    proxy.$modal.msgError("确认方案失败，请稍后重试")
   }).finally(() => {
     confirming.value = false
-  }).catch(() => {})
+  })
 }
 
 function exportSeatTable() {
-  if (dirty.value) {
-    proxy.$modal.msgWarning("请先保存调整后再导出")
+  if (guardPlanAction("export")) {
     return
   }
   const planId = route.params.planId
@@ -648,12 +722,7 @@ function exportSeatPdf() {
 }
 
 function canExportSnapshot() {
-  if (dirty.value) {
-    proxy.$modal.msgWarning("请先保存调整后再导出")
-    return false
-  }
-  if (!seatRows.value.length) {
-    proxy.$modal.msgWarning("暂无座位布局可导出")
+  if (guardPlanAction("export")) {
     return false
   }
   return true
@@ -666,17 +735,24 @@ function buildSeatImageCanvas() {
   const cellWidth = 148
   const cellHeight = 92
   const gap = 10
+  const labelColumnWidth = 40
+  const labelRowHeight = 28
+  const labelGap = 8
   const platformGap = 12
   const platformSize = 36
   const rows = displaySeatRows.value
+  const rowLabels = displayRowLabels.value
+  const columnLabels = displayColumnLabels.value
   const maxCols = maxColCount.value
   const gridWidth = maxCols * cellWidth + Math.max(maxCols - 1, 0) * gap
   const gridHeight = rows.length * cellHeight + Math.max(rows.length - 1, 0) * gap
+  const shellWidth = labelColumnWidth + labelGap + gridWidth
+  const shellHeight = labelRowHeight + labelGap + gridHeight
   const platform = viewPlatformPosition.value
   const isHorizontalPlatform = ["FRONT", "BACK"].includes(platform)
   const isVerticalPlatform = ["LEFT", "RIGHT"].includes(platform)
-  const width = padding * 2 + gridWidth + (isVerticalPlatform ? platformSize + platformGap : 0)
-  const height = padding * 2 + titleHeight + gridHeight + (isHorizontalPlatform ? platformSize + platformGap : 0)
+  const width = padding * 2 + shellWidth + (isVerticalPlatform ? platformSize + platformGap : 0)
+  const height = padding * 2 + titleHeight + shellHeight + (isHorizontalPlatform ? platformSize + platformGap : 0)
   const canvas = document.createElement("canvas")
   canvas.width = width * scale
   canvas.height = height * scale
@@ -688,11 +764,45 @@ function buildSeatImageCanvas() {
   drawImageBackground(ctx, width, height)
   drawImageHeader(ctx, padding)
 
-  const gridX = padding + (platform === "LEFT" ? platformSize + platformGap : 0)
-  const gridY = padding + titleHeight + (platform === "FRONT" ? platformSize + platformGap : 0)
-  drawImagePlatform(ctx, gridX, gridY, gridWidth, gridHeight, platformSize)
-  drawImageSeatGrid(ctx, rows, gridX, gridY, cellWidth, cellHeight, gap)
+  const shellX = padding + (platform === "LEFT" ? platformSize + platformGap : 0)
+  const shellY = padding + titleHeight + (platform === "FRONT" ? platformSize + platformGap : 0)
+  const seatGridX = shellX + labelColumnWidth + labelGap
+  const seatGridY = shellY + labelRowHeight + labelGap
+  drawImagePlatform(ctx, shellX, shellY, shellWidth, shellHeight, platformSize)
+  drawImageSeatFrame(ctx, rows, rowLabels, columnLabels, shellX, shellY, seatGridX, seatGridY, labelColumnWidth, labelRowHeight, cellWidth, cellHeight, gap)
   return canvas
+}
+
+function drawImageSeatFrame(ctx, rows, rowLabels, columnLabels, shellX, shellY, seatGridX, seatGridY, labelColumnWidth, labelRowHeight, cellWidth, cellHeight, gap) {
+  drawImageLabelBadge(ctx, shellX, shellY, labelColumnWidth, labelRowHeight, "")
+  drawImageColumnLabels(ctx, columnLabels, seatGridX, shellY, cellWidth, labelRowHeight, gap)
+  drawImageRowLabels(ctx, rowLabels, shellX, seatGridY, labelColumnWidth, cellHeight, gap)
+  drawImageSeatGrid(ctx, rows, seatGridX, seatGridY, cellWidth, cellHeight, gap)
+}
+
+function drawImageColumnLabels(ctx, columnLabels, x, y, cellWidth, cellHeight, gap) {
+  columnLabels.forEach((label, index) => {
+    const badgeX = x + index * (cellWidth + gap)
+    drawImageLabelBadge(ctx, badgeX, y, cellWidth, cellHeight, label)
+  })
+}
+
+function drawImageRowLabels(ctx, rowLabels, x, y, labelWidth, cellHeight, gap) {
+  rowLabels.forEach((label, index) => {
+    const badgeY = y + index * (cellHeight + gap)
+    drawImageLabelBadge(ctx, x, badgeY, labelWidth, cellHeight, label)
+  })
+}
+
+function drawImageLabelBadge(ctx, x, y, width, height, text) {
+  drawRoundRect(ctx, x, y, width, height, 4, "#fafafa", "#dcdfe6")
+  const content = String(text || "")
+  if (!content) {
+    return
+  }
+  ctx.fillStyle = "#909399"
+  ctx.font = "600 12px Arial, Microsoft YaHei, sans-serif"
+  drawCenteredText(ctx, content, x, y, width, height)
 }
 
 function drawImageBackground(ctx, width, height) {
@@ -720,15 +830,15 @@ function drawImageHeader(ctx, padding) {
   drawTextWithEllipsis(ctx, meta, padding, padding + 38, 860)
 }
 
-function drawImagePlatform(ctx, gridX, gridY, gridWidth, gridHeight, platformSize) {
+function drawImagePlatform(ctx, shellX, shellY, shellWidth, shellHeight, platformSize) {
   if (viewPlatformPosition.value === "FRONT") {
-    drawPlatformRect(ctx, gridX + gridWidth / 2 - 120, gridY - platformSize - 12, 240, platformSize, "讲台")
+    drawPlatformRect(ctx, shellX + shellWidth / 2 - 120, shellY - platformSize - 12, 240, platformSize, "讲台")
   } else if (viewPlatformPosition.value === "BACK") {
-    drawPlatformRect(ctx, gridX + gridWidth / 2 - 120, gridY + gridHeight + 12, 240, platformSize, "讲台")
+    drawPlatformRect(ctx, shellX + shellWidth / 2 - 120, shellY + shellHeight + 12, 240, platformSize, "讲台")
   } else if (viewPlatformPosition.value === "LEFT") {
-    drawPlatformRect(ctx, gridX - platformSize - 12, gridY, platformSize, gridHeight, "讲台")
+    drawPlatformRect(ctx, shellX - platformSize - 12, shellY, platformSize, shellHeight, "讲台")
   } else if (viewPlatformPosition.value === "RIGHT") {
-    drawPlatformRect(ctx, gridX + gridWidth + 12, gridY, platformSize, gridHeight, "讲台")
+    drawPlatformRect(ctx, shellX + shellWidth + 12, shellY, platformSize, shellHeight, "讲台")
   }
 }
 
@@ -930,63 +1040,27 @@ function normalizeSeats(positions) {
     .map(rowIndex => rowMap.get(rowIndex))
 }
 
-function formatScoreDetail(detailJson) {
-  if (!detailJson) {
-    return "-"
-  }
-  try {
-    const detail = JSON.parse(detailJson)
-    return Object.keys(detail).map(key => `${scoreDetailLabel(key)}：${detail[key]}`).join("，")
-  } catch (e) {
-    return detailJson
-  }
+function formatScoreDetail(scoreItem) {
+  return formatPlanScoreDetailText(scoreItem)
 }
 
 function formatConflict(conflict) {
-  const seats = assignmentList.value.filter(item => item.studentNameSnapshot && String(conflict).includes(item.studentNameSnapshot))
-    .map(item => `${item.studentNameSnapshot}（${formatAssignmentPosition(item)}）`)
-  return seats.length ? `${conflict}。当前座位：${seats.join("、")}` : conflict
+  return formatPlanConflictText(conflict, assignmentList.value, flatSeats.value)
 }
 
-function formatAssignmentPosition(assignment) {
-  if (!assignment) {
-    return "未安排"
-  }
-  const seat = flatSeats.value.find(item => item.seatId === assignment.seatId)
-  return seat?.seatCode || `${assignment.rowIndex} 排 ${assignment.colIndex} 列`
-}
-
-function loadComparison() {
+function loadComparison(selectedPlanId = comparisonPlanId.value) {
   comparisonAssignments.value = []
-  if (!comparisonPlanId.value) {
+  if (!selectedPlanId) {
     return
   }
   comparisonLoading.value = true
-  listAssignment({ planId: comparisonPlanId.value, pageNum: 1, pageSize: 1000 }).then(response => {
+  listAssignment({ planId: selectedPlanId, pageNum: 1, pageSize: 1000 }).then(response => {
     comparisonAssignments.value = response.rows || []
   }).catch(() => {
     comparisonPlanId.value = null
   }).finally(() => {
     comparisonLoading.value = false
   })
-}
-
-function scoreDetailLabel(key) {
-  const labelMap = {
-    required: "需满足数量",
-    violations: "冲突数量",
-    affected: "影响学生数",
-    pairs: "同桌组合数",
-    sameGenderPairs: "同性同桌数",
-    sameLevelPairs: "同水平同桌数",
-    adjacentPairs: "相邻组合数",
-    preferredMissed: "未满足偏好数",
-    assigned: "已安排人数",
-    seed: "随机种子",
-    conflictCount: "冲突数量",
-    penalty: "扣分"
-  }
-  return labelMap[key] || key
 }
 
 function loadDetail() {
@@ -1011,12 +1085,12 @@ function loadDetail() {
     comparisonPlanId.value = null
     comparisonAssignments.value = []
     baseAssignmentSnapshot.value = cloneAssignments(assignmentList.value)
+    syncDirty()
     undoStack.value = []
     redoStack.value = []
     selectionMode.value = false
     selectedSeatIds.value = []
     unassignedKeyword.value = ""
-    dirty.value = false
   }).catch(() => {
     loadError.value = true
   }).finally(() => {
@@ -1138,6 +1212,51 @@ loadDetail()
   max-width: 100%;
   overflow: auto;
   padding-bottom: 4px;
+}
+
+.seat-grid-shell {
+  display: grid;
+  grid-template-columns: 40px auto;
+  grid-template-rows: 28px auto;
+  gap: 8px;
+  align-items: start;
+  width: max-content;
+}
+
+.seat-grid-corner {
+  width: 40px;
+  height: 28px;
+}
+
+.seat-column-labels {
+  display: grid;
+  gap: 8px;
+}
+
+.seat-row-labels {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.seat-grid-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed #dcdfe6;
+  border-radius: 4px;
+  background: #fafafa;
+  color: #909399;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.seat-column-label {
+  height: 28px;
+}
+
+.seat-row-label {
+  height: 94px;
 }
 
 .seat-grid {
@@ -1311,13 +1430,62 @@ loadDetail()
   line-height: 1.7;
 }
 
-.comparison-item {
-  margin-top: 4px;
+.comparison-summary-text {
+  margin-bottom: 8px;
 }
 
-.comparison-more {
-  margin-top: 4px;
-  color: #909399;
+.comparison-list {
+  display: grid;
+  gap: 8px;
+}
+
+.comparison-row {
+  display: grid;
+  grid-template-columns: minmax(96px, 1.2fr) minmax(120px, 1fr) minmax(120px, 1fr);
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid #ebeef5;
+  border-radius: 6px;
+  background: #fafafa;
+}
+
+.comparison-student,
+.comparison-position-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.comparison-student {
+  color: #303133;
+  font-weight: 600;
+}
+
+.comparison-position {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.comparison-position-label {
+  flex: 0 0 auto;
+  min-width: 24px;
+  height: 20px;
+  border-radius: 10px;
+  background: #f4f4f5;
+  color: #606266;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 20px;
+  text-align: center;
+}
+
+.comparison-position-to .comparison-position-label {
+  background: #ecf5ff;
+  color: #1677ff;
 }
 
 .seat-placeholder {
@@ -1361,3 +1529,5 @@ loadDetail()
   }
 }
 </style>
+
+

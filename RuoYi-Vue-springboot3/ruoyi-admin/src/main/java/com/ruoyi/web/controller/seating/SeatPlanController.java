@@ -316,9 +316,13 @@ public class SeatPlanController extends BaseController
         }
         boolean leftPlatform = "LEFT".equals(platformPosition);
         boolean rightPlatform = "RIGHT".equals(platformPosition);
-        int gridColOffset = leftPlatform ? 1 : 0;
-        int totalCols = maxCol + (leftPlatform || rightPlatform ? 1 : 0);
-        int gridStartRow = "FRONT".equals(platformPosition) ? 3 : 2;
+        int rowLabelRow = "FRONT".equals(platformPosition) ? 3 : 2;
+        int gridStartRow = rowLabelRow + 1;
+        int rowLabelCol = leftPlatform ? 1 : 0;
+        int gridColOffset = rowLabelCol + 1;
+        int totalCols = gridColOffset + maxCol + (rightPlatform ? 1 : 0);
+        List<Integer> rowLabels = buildDisplayIndices(maxRow, viewMode);
+        List<Integer> columnLabels = buildDisplayIndices(maxCol, viewMode);
 
         Map<String, SeatPosition> positionMap = new HashMap<>();
         for (SeatPosition position : positions)
@@ -336,6 +340,7 @@ public class SeatPlanController extends BaseController
             {
                 writeMergedCell(sheet, 2, 0, 2, totalCols - 1, "讲台", styles.get("platform"));
             }
+            writeSeatGridLabels(sheet, styles, rowLabelRow, gridColOffset, columnLabels);
             if (leftPlatform)
             {
                 writeMergedCell(sheet, gridStartRow, 0, gridStartRow + maxRow - 1, 0, "讲台", styles.get("platform"));
@@ -349,6 +354,9 @@ public class SeatPlanController extends BaseController
             {
                 Row row = sheet.createRow(gridStartRow + rowIndex - 1);
                 row.setHeightInPoints(54);
+                Cell rowLabelCell = row.createCell(rowLabelCol);
+                rowLabelCell.setCellValue(rowLabels.get(rowIndex - 1));
+                rowLabelCell.setCellStyle(styles.get("label"));
                 for (int colIndex = 1; colIndex <= maxCol; colIndex++)
                 {
                     int sourceRowIndex = isStudentView(viewMode) ? maxRow - rowIndex + 1 : rowIndex;
@@ -376,6 +384,15 @@ public class SeatPlanController extends BaseController
             for (int i = 0; i < totalCols; i++)
             {
                 sheet.setColumnWidth(i, 18 * 256);
+            }
+            sheet.setColumnWidth(rowLabelCol, 6 * 256);
+            if (leftPlatform)
+            {
+                sheet.setColumnWidth(0, 10 * 256);
+            }
+            if (rightPlatform)
+            {
+                sheet.setColumnWidth(totalCols - 1, 10 * 256);
             }
             response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
             response.setCharacterEncoding("utf-8");
@@ -439,6 +456,27 @@ public class SeatPlanController extends BaseController
         return isStudentView(viewMode) ? "学生视角" : "教师视角";
     }
 
+    private void writeSeatGridLabels(Sheet sheet, Map<String, CellStyle> styles, int labelRow, int gridColOffset,
+            List<Integer> columnLabels)
+    {
+        Row row = sheet.getRow(labelRow);
+        if (row == null)
+        {
+            row = sheet.createRow(labelRow);
+        }
+        for (int colIndex = 0; colIndex < gridColOffset; colIndex++)
+        {
+            Cell cell = row.createCell(colIndex);
+            cell.setCellStyle(styles.get("label"));
+        }
+        for (int i = 0; i < columnLabels.size(); i++)
+        {
+            Cell cell = row.createCell(gridColOffset + i);
+            cell.setCellValue(columnLabels.get(i));
+            cell.setCellStyle(styles.get("label"));
+        }
+    }
+
     private void writeMergedCell(Sheet sheet, int firstRow, int firstCol, int lastRow, int lastCol, String value, CellStyle style)
     {
         Row row = sheet.getRow(firstRow);
@@ -487,12 +525,31 @@ public class SeatPlanController extends BaseController
         Map<String, CellStyle> styles = new HashMap<>();
         styles.put("title", createStyle(workbook, IndexedColors.WHITE, IndexedColors.ROYAL_BLUE, true, 16));
         styles.put("meta", createStyle(workbook, IndexedColors.BLACK, IndexedColors.GREY_25_PERCENT, false, 11));
+        styles.put("label", createStyle(workbook, IndexedColors.BLACK, IndexedColors.GREY_25_PERCENT, true, 11));
         styles.put("platform", createStyle(workbook, IndexedColors.WHITE, IndexedColors.BLUE, true, 12));
         styles.put("assigned", createStyle(workbook, IndexedColors.BLACK, IndexedColors.LIGHT_CORNFLOWER_BLUE, false, 11));
         styles.put("empty", createStyle(workbook, IndexedColors.GREY_50_PERCENT, IndexedColors.WHITE, false, 11));
         styles.put("aisle", createStyle(workbook, IndexedColors.GREY_50_PERCENT, IndexedColors.GREY_25_PERCENT, false, 11));
         styles.put("disabled", createStyle(workbook, IndexedColors.RED, IndexedColors.ROSE, false, 11));
         return styles;
+    }
+
+    private List<Integer> buildDisplayIndices(int maxValue, String viewMode)
+    {
+        List<Integer> labels = new ArrayList<>(maxValue);
+        if (isStudentView(viewMode))
+        {
+            for (int value = maxValue; value >= 1; value--)
+            {
+                labels.add(value);
+            }
+            return labels;
+        }
+        for (int value = 1; value <= maxValue; value++)
+        {
+            labels.add(value);
+        }
+        return labels;
     }
 
     private CellStyle createStyle(SXSSFWorkbook workbook, IndexedColors fontColor, IndexedColors backgroundColor,
