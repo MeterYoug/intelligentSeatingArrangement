@@ -2,6 +2,7 @@ package com.ruoyi.seating.service;
 
 import java.util.List;
 import com.ruoyi.seating.domain.SeatClass;
+import com.ruoyi.seating.domain.request.SeatClassCopyRequest;
 
 /**
  * 排座班级Service接口
@@ -58,4 +59,14 @@ public interface ISeatClassService
      * @return 结果
      */
     public int deleteSeatClassByClassId(Long classId);
+
+    /**
+     * 新学期复制班级。
+     *
+     * @param classId 源班级主键
+     * @param copyRequest 复制参数
+     * @param operName 操作人
+     * @return 新班级
+     */
+    public SeatClass copyNewTerm(Long classId, SeatClassCopyRequest copyRequest, String operName);
 }

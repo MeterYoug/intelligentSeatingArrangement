@@ -124,6 +124,7 @@
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['seating:class:edit']">修改</el-button>
+          <el-button link type="primary" icon="CopyDocument" @click="handleCopyNewTerm(scope.row)" v-hasPermi="['seating:class:add']">新学期复制</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['seating:class:remove']">删除</el-button>
         </template>
       </el-table-column>
@@ -218,11 +219,83 @@
         </div>
       </template>
     </el-dialog>
+
+    <el-dialog title="新学期复制" v-model="copyOpen" width="640px" append-to-body>
+      <el-form :model="copyForm" label-width="110px">
+        <el-alert
+          title="默认会复制学生、学生关系、排座规则和教室布局；考试、成绩、座位方案、分配结果和方案评分不会复制。"
+          type="info"
+          :closable="false"
+          class="mb16"
+        />
+        <el-row :gutter="16">
+          <el-col :span="24">
+            <el-form-item label="源班级">
+              <el-input :model-value="copyForm.sourceClassName || '-'" disabled />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="源班级ID">
+              <el-input :model-value="copyForm.sourceClassId == null ? '-' : String(copyForm.sourceClassId)" disabled />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="源学年">
+              <el-input :model-value="copyForm.sourceSchoolYear || '-'" disabled />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="源学期">
+              <el-input :model-value="optionLabel(semesterOptions, copyForm.sourceSemester)" disabled />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="目标班级名称">
+              <el-input v-model="copyForm.className" placeholder="请输入目标班级名称" clearable />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="目标学年">
+              <el-input v-model="copyForm.schoolYear" placeholder="请输入目标学年" clearable />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="目标学期">
+              <el-select v-model="copyForm.semester" placeholder="请选择目标学期" style="width: 100%">
+                <el-option
+                  v-for="item in semesterOptions"
+                  :key="`copy-${item.value}`"
+                  :label="item.label"
+                  :value="item.value"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="复制内容">
+              <el-space wrap>
+                <el-checkbox v-model="copyForm.copyStudents" @change="handleCopyStudentsChange">复制学生</el-checkbox>
+                <el-checkbox v-model="copyForm.copyRelations" :disabled="!copyForm.copyStudents">复制学生关系</el-checkbox>
+                <el-checkbox v-model="copyForm.copyRules">复制排座规则</el-checkbox>
+                <el-checkbox v-model="copyForm.copyClassroomLayout">复制教室布局</el-checkbox>
+              </el-space>
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button type="primary" :loading="copySubmitting" @click="submitCopyForm">确定复制</el-button>
+          <el-button @click="copyOpen = false">取消</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="Class">
-import { listClass, getClass, delClass, addClass, updateClass } from "@/api/seating/class"
+import { listClass, getClass, delClass, addClass, updateClass, copyClassNewTerm } from "@/api/seating/class"
+import { createNewTermCopyForm, normalizeCopyRelations, validateNewTermCopyForm } from "./newTermCopyState.js"
 
 const { proxy } = getCurrentInstance()
 const { sys_normal_disable } = proxy.useDict("sys_normal_disable")
@@ -237,6 +310,9 @@ const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
 const title = ref("")
+const copyOpen = ref(false)
+const copySubmitting = ref(false)
+const copyForm = ref(createNewTermCopyForm())
 
 const gradeOptions = [
   { value: "PRIMARY_1", label: "小学一年级", stage: "PRIMARY" },
@@ -494,6 +570,49 @@ function handleExport() {
   proxy.download("seating/class/export", {
     ...queryParams.value
   }, `class_${new Date().getTime()}.xlsx`)
+}
+
+function handleCopyNewTerm(row) {
+  copyForm.value = createNewTermCopyForm(row)
+  copyOpen.value = true
+}
+
+function handleCopyStudentsChange() {
+  normalizeCopyRelations(copyForm.value)
+}
+
+function buildCopySubmitData() {
+  const normalized = normalizeCopyRelations(copyForm.value)
+  return {
+    className: String(normalized.className ?? '').trim(),
+    schoolYear: String(normalized.schoolYear ?? '').trim(),
+    semester: String(normalized.semester ?? '').trim(),
+    copyStudents: normalized.copyStudents,
+    copyRelations: normalized.copyRelations,
+    copyRules: normalized.copyRules,
+    copyClassroomLayout: normalized.copyClassroomLayout,
+  }
+}
+
+function submitCopyForm() {
+  const errorMessage = validateNewTermCopyForm(copyForm.value)
+  if (errorMessage) {
+    proxy.$modal.msgError(errorMessage)
+    return
+  }
+  copySubmitting.value = true
+  copyClassNewTerm(copyForm.value.sourceClassId, buildCopySubmitData()).then(response => {
+    proxy.$modal.msgSuccess("复制成功")
+    copyOpen.value = false
+    getList()
+    if (response?.data?.classId) {
+      ids.value = [response.data.classId]
+      single.value = true
+      multiple.value = false
+    }
+  }).finally(() => {
+    copySubmitting.value = false
+  })
 }
 
 getList()

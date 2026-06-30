@@ -20,6 +20,7 @@ import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.seating.domain.SeatClass;
+import com.ruoyi.seating.domain.request.SeatClassCopyRequest;
 import com.ruoyi.seating.service.ISeatClassService;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.common.core.page.TableDataInfo;
@@ -72,6 +73,19 @@ public class SeatClassController extends BaseController
     public AjaxResult getInfo(@PathVariable("classId") Long classId)
     {
         return success(checkClassAccess(classId));
+    }
+
+    /**
+     * 新学期复制班级。
+     */
+    @PreAuthorize("@ss.hasPermi('seating:class:add')")
+    @Log(title = "排座班级", businessType = BusinessType.INSERT)
+    @PostMapping("/{classId}/copy-new-term")
+    public AjaxResult copyNewTerm(@PathVariable("classId") Long classId,
+            @RequestBody SeatClassCopyRequest copyRequest)
+    {
+        checkClassAccess(classId);
+        return success(seatClassService.copyNewTerm(classId, copyRequest, getUsername()));
     }
 
     /**
