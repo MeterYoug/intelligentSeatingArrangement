@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="container">
     <div class="left-board">
       <div class="logo-wrapper">
@@ -58,13 +58,13 @@
     </div>
     <div class="center-board">
       <div class="action-bar">
-        <el-button icon="Download" type="primary" text @click="download">
+        <el-button icon="Download" type="primary" plain class="action-btn" @click="download">
           导出vue文件
         </el-button>
-        <el-button class="copy-btn-main" icon="DocumentCopy" type="primary" text @click="copy">
+        <el-button class="copy-btn-main action-btn" icon="DocumentCopy" type="primary" plain @click="copy">
           复制代码
         </el-button>
-        <el-button class="delete-btn" icon="Delete" text @click="empty" type="danger">
+        <el-button class="delete-btn action-btn" icon="Delete" plain @click="empty" type="danger">
           清空
         </el-button>
       </div>
@@ -446,9 +446,32 @@ $lighterBlue: #409EFF;
       display: flex;
       align-items: center;
       justify-content: flex-end;
+      gap: 10px;
 
-      u .delete-btn {
-        color: #F56C6C;
+      :deep(.el-button) {
+        min-height: 32px;
+        padding: 0 14px;
+        border-radius: 10px;
+        box-shadow: none;
+        font-weight: 600;
+      }
+
+      :deep(.action-btn.el-button--primary.is-plain) {
+        color: #3f6ce8;
+        background: #eef4ff;
+        border-color: #d7e3ff;
+      }
+
+      :deep(.action-btn.el-button--danger.is-plain) {
+        color: #d94b4b;
+        background: #fff1f1;
+        border-color: #ffdada;
+      }
+
+      :deep(.action-btn.el-button--danger.is-plain:hover),
+      :deep(.action-btn.el-button--danger.is-plain:focus) {
+        color: #c92a2a;
+        background: #ffe8e8;
       }
     }
 

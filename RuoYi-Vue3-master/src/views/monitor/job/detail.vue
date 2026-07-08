@@ -1,5 +1,5 @@
 <template>
-  <el-dialog :title="type === 'log' ? '调度日志详细' : '任务详细'" v-model="dialogVisible" width="780px" append-to-body>
+  <el-dialog class="gen-dialog" :title="type === 'log' ? '调度日志详细' : '任务详细'" v-model="dialogVisible" width="780px" append-to-body>
     <div class="detail-wrap">
       <template v-if="type === 'log'">
         <!-- 基本信息 -->
@@ -178,7 +178,7 @@
     </div>
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click="dialogVisible = false">关 闭</el-button>
+        <el-button @click="dialogVisible = false">关闭</el-button>
       </div>
     </template>
   </el-dialog>
@@ -211,6 +211,41 @@ const costTime = computed(() => {
 </script>
 
 <style scoped>
+.gen-dialog :deep(.el-dialog) {
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(31, 35, 41, 0.14);
+}
+
+.gen-dialog :deep(.el-dialog__header) {
+  margin-right: 0;
+  padding: 18px 22px 10px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.gen-dialog :deep(.el-dialog__title) {
+  color: #1f2329;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.gen-dialog :deep(.el-dialog__body) {
+  padding: 18px 22px 14px;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.dialog-footer :deep(.el-button) {
+  min-width: 88px;
+  height: 34px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
 .detail-label {
   width: 80px;
 }

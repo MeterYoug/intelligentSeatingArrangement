@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <el-dialog v-model="visible" :title="`「${noticeTitle}」已读用户`" width="760px" top="6vh" append-to-body @close="handleClose">
     <el-form ref="queryRef" :model="queryParams" size="small" :inline="true" style="margin-bottom: 4px;">
       <el-form-item prop="searchValue">
@@ -13,8 +13,8 @@
         />
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" icon="Search" size="small" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" size="small" @click="resetQuery">重置</el-button>
+        <el-button type="primary" plain icon="Search" size="small" @click="handleQuery">搜索</el-button>
+        <el-button plain icon="Refresh" size="small" @click="resetQuery">重置</el-button>
       </el-form-item>
       <el-form-item style="float: right; margin-right: 0;">
         <span class="read-stat">
@@ -116,3 +116,4 @@ defineExpose({
   margin: 0 2px;
 }
 </style>
+

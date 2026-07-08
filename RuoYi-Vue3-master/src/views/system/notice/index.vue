@@ -1,4 +1,4 @@
-<template>
+﻿<template>
    <div class="app-container">
       <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
          <el-form-item label="公告标题" prop="noticeTitle">
@@ -30,8 +30,8 @@
             </el-select>
          </el-form-item>
          <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" plain icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button plain icon="Refresh" @click="resetQuery">重置</el-button>
          </el-form-item>
       </el-form>
 
@@ -73,7 +73,7 @@
          <el-table-column label="序号" align="center" prop="noticeId" width="100" />
          <el-table-column label="公告标题" align="center" :show-overflow-tooltip="true">
             <template #default="scope">
-               <a class="link-type" style="cursor:pointer" @click="handleViewData(scope.row)">{{ scope.row.noticeTitle }}</a>
+               <el-button link type="primary" class="table-text-btn" @click="handleViewData(scope.row)">{{ scope.row.noticeTitle }}</el-button>
             </template>
          </el-table-column>
          <el-table-column label="公告类型" align="center" prop="noticeType" width="100">
@@ -94,9 +94,9 @@
          </el-table-column>
          <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
             <template #default="scope">
-               <el-button link type="primary" icon="User" @click="handleReadUsers(scope.row)" v-hasPermi="['system:notice:list']">阅读用户</el-button>
-               <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:notice:edit']">修改</el-button>
-               <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:notice:remove']" >删除</el-button>
+               <el-button type="primary" plain class="row-action-btn" icon="User" @click="handleReadUsers(scope.row)" v-hasPermi="['system:notice:list']">阅读用户</el-button>
+               <el-button type="primary" plain class="row-action-btn" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:notice:edit']">修改</el-button>
+               <el-button type="danger" plain class="row-action-btn" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:notice:remove']" >删除</el-button>
             </template>
          </el-table-column>
       </el-table>
@@ -150,8 +150,8 @@
          </el-form>
          <template #footer>
             <div class="dialog-footer">
-               <el-button type="primary" @click="submitForm">确 定</el-button>
-               <el-button @click="cancel">取 消</el-button>
+               <el-button @click="cancel">取消</el-button>
+               <el-button type="primary" @click="submitForm">确定</el-button>
             </div>
          </template>
       </el-dialog>
@@ -304,3 +304,4 @@ function handleDelete(row) {
 
 getList()
 </script>
+

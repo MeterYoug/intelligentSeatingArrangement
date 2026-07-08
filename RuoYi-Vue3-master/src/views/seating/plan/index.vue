@@ -1,6 +1,6 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
+  <div class="app-container plan-page">
+    <el-form class="plan-search" :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
       <el-form-item label="班级" prop="classId">
         <el-select v-model="queryParams.classId" placeholder="请选择班级" filterable clearable style="width: 180px">
           <el-option v-for="item in classOptions" :key="item.classId" :label="item.className" :value="item.classId" />
@@ -25,8 +25,8 @@
         </el-select>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+        <el-button type="primary" plain icon="Search" @click="handleQuery">搜索</el-button>
+        <el-button plain icon="Refresh" @click="resetQuery">重置</el-button>
       </el-form-item>
     </el-form>
 
@@ -126,11 +126,11 @@
       <el-table-column label="备注" align="center" prop="remark" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
-          <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">查看</el-button>
-          <el-button v-if="scope.row.planStatus !== 'ACTIVE'" link type="primary" icon="CircleCheck" @click="handleConfirm(scope.row)" v-hasPermi="['seating:plan:edit']">{{ confirmActionText(scope.row) }}</el-button>
-          <el-button link type="primary" icon="CopyDocument" @click="handleCopy(scope.row)" v-hasPermi="['seating:plan:add']">复制</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['seating:plan:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['seating:plan:remove']">删除</el-button>
+          <el-button type="primary" plain icon="View" class="row-action-btn" @click="handleDetail(scope.row)">查看</el-button>
+          <el-button v-if="scope.row.planStatus !== 'ACTIVE'" class="row-action-btn" plain type="primary" icon="CircleCheck" @click="handleConfirm(scope.row)" v-hasPermi="['seating:plan:edit']">{{ confirmActionText(scope.row) }}</el-button>
+          <el-button type="warning" plain icon="CopyDocument" class="row-action-btn" @click="handleCopy(scope.row)" v-hasPermi="['seating:plan:add']">复制</el-button>
+          <el-button type="primary" plain icon="Edit" class="row-action-btn" @click="handleUpdate(scope.row)" v-hasPermi="['seating:plan:edit']">修改</el-button>
+          <el-button type="danger" plain icon="Delete" class="row-action-btn" @click="handleDelete(scope.row)" v-hasPermi="['seating:plan:remove']">删除</el-button>
         </template>
       </el-table-column>
       <template #empty>
@@ -151,8 +151,8 @@
     />
 
     <!-- 添加或修改排座方案对话框 -->
-    <el-dialog :title="title" v-model="open" width="500px" append-to-body>
-      <el-form ref="planRef" :model="form" :rules="rules" label-width="100px">
+    <el-dialog class="plan-dialog" :title="title" v-model="open" width="500px" append-to-body>
+      <el-form ref="planRef" :model="form" :rules="rules" label-width="100px" class="plan-form">
         <el-row>
           <el-col :span="24">
             <el-form-item label="班级" prop="classId">
@@ -196,8 +196,8 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
-          <el-button @click="cancel">取 消</el-button>
+          <el-button @click="cancel">取消</el-button>
+          <el-button type="primary" @click="submitForm">确定</el-button>
         </div>
       </template>
     </el-dialog>
@@ -511,3 +511,208 @@ function handleExport() {
 getOptions()
 getList()
 </script>
+
+<style scoped lang="scss">
+.plan-page {
+  min-height: calc(100vh - 84px);
+  padding: 20px;
+  background: linear-gradient(180deg, #f7f9fc 0%, #f5f7fb 100%);
+  color: #1f2329;
+}
+
+.plan-search :deep(.el-form-item) {
+  margin-right: 16px;
+  margin-bottom: 14px;
+}
+
+.plan-search :deep(.el-form-item__label) {
+  color: #4f5b6d;
+  font-weight: 600;
+}
+
+.plan-search :deep(.el-form-item__content) {
+  min-height: 40px;
+}
+
+.plan-search :deep(.el-input__wrapper),
+.plan-search :deep(.el-select__wrapper),
+.plan-search :deep(.el-textarea__inner),
+.plan-search :deep(.el-input-number__wrapper) {
+  min-height: 34px;
+  border: 1px solid #d7e0ea;
+  border-radius: 11px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  background: #ffffff;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.plan-search :deep(.el-input__wrapper:hover),
+.plan-search :deep(.el-select__wrapper:hover),
+.plan-search :deep(.el-textarea__inner:hover),
+.plan-search :deep(.el-input-number__wrapper:hover) {
+  border-color: #b8c7db;
+}
+
+.plan-search :deep(.el-input.is-focus .el-input__wrapper),
+.plan-search :deep(.el-select__wrapper.is-focused),
+.plan-search :deep(.el-textarea__inner:focus),
+.plan-search :deep(.el-input-number.is-focus .el-input-number__wrapper) {
+  border-color: #4c7df0;
+  box-shadow: 0 0 0 3px rgba(76, 125, 240, 0.12), 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.plan-search :deep(.el-input__inner),
+.plan-search :deep(.el-select__selected-item),
+.plan-search :deep(.el-textarea__inner) {
+  color: #1f2937;
+}
+
+.plan-search :deep(.el-input__inner::placeholder),
+.plan-search :deep(.el-textarea__inner::placeholder) {
+  color: #a1adbb;
+}
+
+.plan-search :deep(.el-button) {
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 10px;
+  box-shadow: none;
+  font-weight: 600;
+  background: #fff;
+}
+
+.plan-search :deep(.el-button--primary) {
+  color: #fff;
+  background: linear-gradient(135deg, #5a8cff 0%, #3e6bf5 100%);
+  border-color: transparent;
+}
+
+.plan-search :deep(.el-button:not(.el-button--primary)) {
+  color: #5f6b7a;
+  background: #fff;
+  border-color: #d8e0eb;
+}
+
+.plan-table :deep(.row-action-btn) {
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.plan-table :deep(.row-action-btn + .row-action-btn) {
+  margin-left: 10px;
+}
+
+.plan-table :deep(.row-action-btn.el-button--primary) {
+  color: #3f6ce8;
+}
+
+.plan-table :deep(.row-action-btn.el-button--warning) {
+  color: #c98512;
+}
+
+.plan-table :deep(.row-action-btn.el-button--danger) {
+  color: #d94b4b;
+}
+
+.plan-table :deep(.row-action-btn.el-button--danger:hover),
+.plan-table :deep(.row-action-btn.el-button--danger:focus) {
+  color: #c92a2a;
+}
+
+.plan-dialog :deep(.el-dialog) {
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(31, 35, 41, 0.14);
+}
+
+.plan-dialog :deep(.el-dialog__header) {
+  margin-right: 0;
+  padding: 18px 22px 10px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.plan-dialog :deep(.el-dialog__title) {
+  color: #1f2329;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.plan-dialog :deep(.el-dialog__body) {
+  padding: 18px 22px 14px;
+}
+
+.plan-dialog :deep(.el-dialog__footer) {
+  padding: 0 22px 20px;
+}
+
+.plan-form :deep(.el-form-item) {
+  margin-bottom: 16px;
+}
+
+.plan-form :deep(.el-form-item__label) {
+  color: #4f5b6d;
+  font-weight: 600;
+}
+
+.plan-form :deep(.el-form-item__content) {
+  min-height: 40px;
+}
+
+.plan-form :deep(.el-input__wrapper),
+.plan-form :deep(.el-select__wrapper),
+.plan-form :deep(.el-textarea__inner),
+.plan-form :deep(.el-input-number__wrapper) {
+  border: 1px solid #d7e0ea;
+  border-radius: 11px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  background: #ffffff;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.plan-form :deep(.el-input__wrapper:hover),
+.plan-form :deep(.el-select__wrapper:hover),
+.plan-form :deep(.el-textarea__inner:hover),
+.plan-form :deep(.el-input-number__wrapper:hover) {
+  border-color: #b8c7db;
+}
+
+.plan-form :deep(.el-input.is-focus .el-input__wrapper),
+.plan-form :deep(.el-select__wrapper.is-focused),
+.plan-form :deep(.el-textarea__inner:focus),
+.plan-form :deep(.el-input-number.is-focus .el-input-number__wrapper) {
+  border-color: #4c7df0;
+  box-shadow: 0 0 0 3px rgba(76, 125, 240, 0.12), 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.plan-form :deep(.el-input__inner),
+.plan-form :deep(.el-select__selected-item),
+.plan-form :deep(.el-textarea__inner) {
+  color: #1f2937;
+}
+
+.plan-form :deep(.el-input__inner::placeholder),
+.plan-form :deep(.el-textarea__inner::placeholder) {
+  color: #a1adbb;
+}
+
+.status-group :deep(.el-radio) {
+  margin-right: 16px;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.dialog-footer :deep(.el-button) {
+  min-width: 88px;
+  height: 34px;
+}
+
+.dialog-footer :deep(.el-button--primary) {
+  box-shadow: 0 8px 16px rgba(77, 126, 255, 0.18);
+}
+</style>

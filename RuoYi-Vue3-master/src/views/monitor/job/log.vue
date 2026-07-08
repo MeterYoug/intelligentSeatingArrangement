@@ -1,4 +1,4 @@
-<template>
+﻿<template>
    <div class="app-container">
       <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
          <el-form-item label="任务名称" prop="jobName">
@@ -51,8 +51,8 @@
             ></el-date-picker>
          </el-form-item>
          <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" plain icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button plain icon="Refresh" @click="resetQuery">重置</el-button>
          </el-form-item>
       </el-form>
 
@@ -119,7 +119,7 @@
          </el-table-column>
          <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
             <template #default="scope">
-               <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['monitor:job:query']">详细</el-button>
+               <el-button type="primary" plain class="row-action-btn" icon="View" @click="handleView(scope.row)" v-hasPermi="['monitor:job:query']">详细</el-button>
             </template>
          </el-table-column>
       </el-table>

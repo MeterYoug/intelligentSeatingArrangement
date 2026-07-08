@@ -7,69 +7,10 @@
             <Collection style="width: 1em; height: 1em; vertical-align: middle;" /> <span style="vertical-align: middle;">缓存列表</span>
             <el-button
               style="float: right; padding: 3px 0"
-              link
               type="primary"
+              plain
               icon="Refresh"
               @click="refreshCacheNames()"
-            ></el-button>
-          </template>
-          <el-table
-            v-loading="loading"
-            :data="cacheNames"
-            :height="tableHeight"
-            highlight-current-row
-            @row-click="getCacheKeys"
-            style="width: 100%"
-          >
-            <el-table-column
-              label="序号"
-              width="60"
-              type="index"
-            ></el-table-column>
-
-            <el-table-column
-              label="缓存名称"
-              align="center"
-              prop="cacheName"
-              :show-overflow-tooltip="true"
-              :formatter="nameFormatter"
-            ></el-table-column>
-
-            <el-table-column
-              label="备注"
-              align="center"
-              prop="remark"
-              :show-overflow-tooltip="true"
-            />
-            <el-table-column
-              label="操作"
-              width="60"
-              align="center"
-              class-name="small-padding fixed-width"
-            >
-              <template #default="scope">
-                <el-button
-                  link
-                  type="primary"
-                  icon="Delete"
-                  @click="handleClearCacheName(scope.row)"
-                ></el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-card>
-      </el-col>
-
-      <el-col :span="8">
-        <el-card style="height: calc(100vh - 125px)">
-          <template #header>
-            <Key style="width: 1em; height: 1em; vertical-align: middle;" /> <span style="vertical-align: middle;">键名列表</span>
-            <el-button
-              style="float: right; padding: 3px 0"
-              link
-              type="primary"
-              icon="Refresh"
-              @click="refreshCacheKeys()"
             ></el-button>
           </template>
           <el-table
@@ -100,8 +41,8 @@
             >
               <template #default="scope">
                 <el-button
-                  link
-                  type="primary"
+                  type="danger"
+                  plain
                   icon="Delete"
                   @click="handleClearCacheKey(scope.row)"
                 ></el-button>
@@ -117,11 +58,11 @@
             <Document style="width: 1em; height: 1em; vertical-align: middle;" /> <span style="vertical-align: middle;">缓存内容</span>
             <el-button
               style="float: right; padding: 3px 0"
-              link
-              type="primary"
-              icon="Refresh"
+              type="danger"
+              plain
+              icon="Delete"
               @click="handleClearCacheAll()"
-              >清理全部</el-button
+              >娓呯悊鍏ㄩ儴</el-button
             >
           </template>
           <el-form :model="cacheForm">

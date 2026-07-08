@@ -45,12 +45,12 @@
         </el-select>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+        <el-button type="primary" plain icon="Search" @click="handleQuery">搜索</el-button>
+        <el-button plain icon="Refresh" @click="resetQuery">重置</el-button>
       </el-form-item>
     </el-form>
 
-    <el-table v-loading="loading" :data="scoreList" :empty-text="emptyText" :default-sort="{ prop: 'studentNo', order: 'ascending' }" @selection-change="handleSelectionChange" @sort-change="handleSortChange">
+    <el-table v-loading="loading" :data="scoreList" :empty-text="emptyText" :default-sort="{ prop: 'studentNo', order: 'ascending' }" @selection-change="handleSelectionChange" @sort-change="handleSortChange" class="score-table">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="学号" align="center" prop="studentNo" min-width="110" sortable="custom" />
       <el-table-column label="姓名" align="center" prop="studentNameSnapshot" min-width="110" />
@@ -69,8 +69,8 @@
       <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="150">
         <template #default="scope">
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['seating:studentScore:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['seating:studentScore:remove']">删除</el-button>
+          <el-button type="primary" plain icon="Edit" class="row-action-btn" @click="handleUpdate(scope.row)" v-hasPermi="['seating:studentScore:edit']">修改</el-button>
+          <el-button type="danger" plain icon="Delete" class="row-action-btn" @click="handleDelete(scope.row)" v-hasPermi="['seating:studentScore:remove']">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -83,8 +83,8 @@
       @pagination="getList"
     />
 
-    <el-dialog title="修改学生成绩" v-model="open" width="520px" append-to-body>
-      <el-form ref="scoreRef" :model="form" label-width="90px">
+    <el-dialog class="score-dialog" title="修改学生成绩" v-model="open" width="520px" append-to-body>
+      <el-form class="score-form" ref="scoreRef" :model="form" label-width="90px">
         <el-form-item label="学号">
           <el-input v-model="form.studentNo" disabled />
         </el-form-item>
@@ -100,8 +100,8 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
-          <el-button @click="open = false">取 消</el-button>
+          <el-button @click="open = false">取消</el-button>
+          <el-button type="primary" @click="submitForm">确定</el-button>
         </div>
       </template>
     </el-dialog>
@@ -329,4 +329,180 @@ loadExam()
 .score-query {
   margin-top: 16px;
 }
+<style scoped>
+.exam-summary {
+  margin-top: 16px;
+}
+
+.score-query {
+  margin-top: 16px;
+}
+
+.score-query :deep(.el-form-item__label) {
+  color: #556174;
+  font-weight: 600;
+}
+
+.score-query :deep(.el-input__wrapper),
+.score-query :deep(.el-select__wrapper) {
+  min-height: 34px;
+  border: 1px solid #d7e0ea;
+  border-radius: 10px;
+  box-shadow: none;
+  background: #fff;
+}
+
+.score-query :deep(.el-input__wrapper:hover),
+.score-query :deep(.el-select__wrapper:hover) {
+  border-color: #9cb6ff;
+  box-shadow: 0 0 0 1px rgba(90, 140, 255, 0.12);
+}
+
+.score-query :deep(.el-input.is-focus .el-input__wrapper),
+.score-query :deep(.el-select__wrapper.is-focused) {
+  border-color: #5a8cff;
+  box-shadow: 0 0 0 2px rgba(90, 140, 255, 0.12);
+}
+
+.score-query :deep(.el-input__inner),
+.score-query :deep(.el-select__selected-item) {
+  color: #243041;
+}
+
+.score-query :deep(.el-input__inner::placeholder) {
+  color: #a2afbf;
+}
+
+.score-query :deep(.el-button) {
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 10px;
+  box-shadow: none;
+  font-weight: 600;
+}
+
+.score-query :deep(.el-button--primary) {
+  color: #fff;
+  background: linear-gradient(135deg, #5a8cff 0%, #3e6bf5 100%);
+  border-color: transparent;
+}
+
+.score-table :deep(.row-action-btn) {
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.score-table :deep(.row-action-btn + .row-action-btn) {
+  margin-left: 10px;
+}
+
+.score-table :deep(.row-action-btn.el-button--primary) {
+  color: #3f6ce8;
+}
+
+.score-table :deep(.row-action-btn.el-button--danger) {
+  color: #d94b4b;
+}
+
+.score-table :deep(.row-action-btn.el-button--danger:hover),
+.score-table :deep(.row-action-btn.el-button--danger:focus) {
+  color: #c92a2a;
+}
+
+.score-query :deep(.el-button:not(.el-button--primary)) {
+  color: #5f6b7a;
+  background: #fff;
+  border-color: #d8e0eb;
+}
+
+.score-dialog :deep(.el-dialog) {
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(31, 35, 41, 0.14);
+}
+
+.score-dialog :deep(.el-dialog__header) {
+  margin-right: 0;
+  padding: 18px 22px 10px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.score-dialog :deep(.el-dialog__title) {
+  color: #1f2329;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.score-dialog :deep(.el-dialog__body) {
+  padding: 18px 22px 14px;
+}
+
+.score-form :deep(.el-form-item) {
+  margin-bottom: 14px;
+}
+
+.score-form :deep(.el-form-item__label) {
+  color: #556174;
+  font-weight: 600;
+}
+
+.score-form :deep(.el-form-item__content) {
+  min-height: 40px;
+}
+
+.score-form :deep(.el-input__wrapper),
+.score-form :deep(.el-select__wrapper),
+.score-form :deep(.el-textarea__inner),
+.score-form :deep(.el-input-number__wrapper) {
+  border: 1px solid #d7e0ea;
+  border-radius: 10px;
+  box-shadow: none;
+  background: #fff;
+}
+
+.score-form :deep(.el-input__wrapper:hover),
+.score-form :deep(.el-select__wrapper:hover),
+.score-form :deep(.el-textarea__inner:hover),
+.score-form :deep(.el-input-number__wrapper:hover) {
+  border-color: #9cb6ff;
+  box-shadow: 0 0 0 1px rgba(90, 140, 255, 0.12);
+}
+
+.score-form :deep(.el-input.is-focus .el-input__wrapper),
+.score-form :deep(.el-select__wrapper.is-focused),
+.score-form :deep(.el-textarea__inner:focus),
+.score-form :deep(.el-input-number.is-focus .el-input-number__wrapper) {
+  border-color: #5a8cff;
+  box-shadow: 0 0 0 2px rgba(90, 140, 255, 0.12);
+}
+
+.score-form :deep(.el-input__inner),
+.score-form :deep(.el-select__selected-item),
+.score-form :deep(.el-textarea__inner) {
+  color: #243041;
+}
+
+.score-form :deep(.el-input__inner::placeholder),
+.score-form :deep(.el-textarea__inner::placeholder) {
+  color: #a2afbf;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.dialog-footer :deep(.el-button) {
+  min-width: 88px;
+  height: 34px;
+  border-radius: 10px;
+}
+
+.dialog-footer :deep(.el-button--primary) {
+  box-shadow: 0 8px 16px rgba(77, 126, 255, 0.18);
+}
 </style>
+

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
    <div class="app-container">
       <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
          <el-form-item label="字典名称" prop="dictName">
@@ -45,8 +45,8 @@
             ></el-date-picker>
          </el-form-item>
          <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" plain icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button plain icon="Refresh" @click="resetQuery">重置</el-button>
          </el-form-item>
       </el-form>
 
@@ -107,7 +107,7 @@
          <el-table-column label="字典名称" align="center" prop="dictName" :show-overflow-tooltip="true"/>
          <el-table-column label="字典类型" align="center" :show-overflow-tooltip="true">
             <template #default="scope">
-               <a class="link-type" style="cursor:pointer" @click="handleViewData(scope.row)">{{ scope.row.dictType }}</a>
+               <el-button link type="primary" class="table-text-btn" @click="handleViewData(scope.row)">{{ scope.row.dictType }}</el-button>
             </template>
          </el-table-column>
          <el-table-column label="状态" align="center" prop="status">
@@ -123,9 +123,9 @@
          </el-table-column>
          <el-table-column label="操作" align="center" width="280" class-name="small-padding fixed-width">
             <template #default="scope">
-               <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:dict:edit']">修改</el-button>
-               <el-button link type="primary" icon="Operation" @click="handleDataList(scope.row)" v-hasPermi="['system:dict:edit']">列表</el-button>
-               <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:dict:remove']">删除</el-button>
+               <el-button type="primary" plain class="row-action-btn" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:dict:edit']">修改</el-button>
+               <el-button type="primary" plain class="row-action-btn" icon="Operation" @click="handleDataList(scope.row)" v-hasPermi="['system:dict:edit']">列表</el-button>
+               <el-button type="danger" plain class="row-action-btn" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:dict:remove']">删除</el-button>
             </template>
          </el-table-column>
       </el-table>
@@ -170,8 +170,8 @@
          </el-form>
          <template #footer>
             <div class="dialog-footer">
-               <el-button type="primary" @click="submitForm">确 定</el-button>
-               <el-button @click="cancel">取 消</el-button>
+               <el-button @click="cancel">取消</el-button>
+               <el-button type="primary" @click="submitForm">确定</el-button>
             </div>
          </template>
       </el-dialog>
@@ -344,3 +344,4 @@ function handleRefreshCache() {
 
 getList()
 </script>
+
