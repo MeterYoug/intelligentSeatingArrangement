@@ -21,8 +21,8 @@
             </el-select>
          </el-form-item>
          <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" plain icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button plain icon="Refresh" @click="resetQuery">重置</el-button>
          </el-form-item>
       </el-form>
 
@@ -93,16 +93,16 @@
          </el-table-column>
          <el-table-column label="操作" align="center" width="210" class-name="small-padding fixed-width">
             <template #default="scope">
-               <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:menu:edit']">修改</el-button>
-               <el-button link type="primary" icon="Plus" @click="handleAdd(scope.row)" v-hasPermi="['system:menu:add']">新增</el-button>
-               <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:menu:remove']">删除</el-button>
+               <el-button type="primary" plain class="row-action-btn" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:menu:edit']">修改</el-button>
+               <el-button type="primary" plain class="row-action-btn" icon="Plus" @click="handleAdd(scope.row)" v-hasPermi="['system:menu:add']">新增</el-button>
+               <el-button type="danger" plain class="row-action-btn" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:menu:remove']">删除</el-button>
             </template>
          </el-table-column>
       </el-table>
 
       <!-- 添加或修改菜单对话框 -->
-      <el-dialog :title="title" v-model="open" width="680px" append-to-body>
-         <el-form ref="menuRef" :model="form" :rules="rules" label-width="100px">
+      <el-dialog class="gen-dialog" :title="title" v-model="open" width="680px" append-to-body>
+         <el-form ref="menuRef" :model="form" :rules="rules" label-width="100px" class="gen-form">
             <el-row>
                <el-col :span="24">
                   <el-form-item label="上级菜单">
@@ -297,8 +297,8 @@
          </el-form>
          <template #footer>
             <div class="dialog-footer">
-               <el-button type="primary" @click="submitForm">确 定</el-button>
-               <el-button @click="cancel">取 消</el-button>
+               <el-button @click="cancel">取消</el-button>
+               <el-button type="primary" @click="submitForm">确定</el-button>
             </div>
          </template>
       </el-dialog>
@@ -506,3 +506,76 @@ function handleDelete(row) {
 
 getList()
 </script>
+<style scoped>
+.gen-dialog :deep(.el-dialog) {
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(31, 35, 41, 0.14);
+}
+
+.gen-dialog :deep(.el-dialog__header) {
+  margin-right: 0;
+  padding: 18px 22px 10px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.gen-dialog :deep(.el-dialog__title) {
+  color: #1f2329;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.gen-dialog :deep(.el-dialog__body) {
+  padding: 18px 22px 14px;
+}
+
+.gen-form :deep(.el-form-item) {
+  margin-bottom: 16px;
+}
+
+.gen-form :deep(.el-form-item__label) {
+  color: #4f5b6d;
+  font-weight: 600;
+}
+
+.gen-form :deep(.el-input__wrapper),
+.gen-form :deep(.el-select__wrapper),
+.gen-form :deep(.el-tree-select__wrapper),
+.gen-form :deep(.el-input-number__decrease),
+.gen-form :deep(.el-input-number__increase) {
+  border: 1px solid #d7e0ea;
+  border-radius: 10px;
+  box-shadow: none;
+  background: #fff;
+}
+
+.gen-form :deep(.el-input__wrapper:hover),
+.gen-form :deep(.el-select__wrapper:hover),
+.gen-form :deep(.el-tree-select__wrapper:hover) {
+  border-color: #9cb6ff;
+}
+
+.gen-form :deep(.el-input.is-focus .el-input__wrapper),
+.gen-form :deep(.el-select__wrapper.is-focused),
+.gen-form :deep(.el-tree-select__wrapper.is-focused) {
+  border-color: #5a8cff;
+  box-shadow: 0 0 0 2px rgba(90, 140, 255, 0.12);
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.dialog-footer :deep(.el-button) {
+  min-width: 88px;
+  height: 34px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.dialog-footer :deep(.el-button--primary) {
+  box-shadow: 0 8px 16px rgba(77, 126, 255, 0.18);
+}
+</style>

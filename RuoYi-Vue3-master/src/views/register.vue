@@ -64,7 +64,7 @@
           <span v-else>注 册 中...</span>
         </el-button>
         <div style="float: right;">
-          <router-link class="link-type" :to="'/login'">使用已有账户登录</router-link>
+          <router-link class="auth-link" :to="'/login'">使用已有账户登录</router-link>
         </div>
       </el-form-item>
     </el-form>

@@ -1,5 +1,5 @@
 <template>
-  <el-dialog title="操作日志详细" v-model="dialogVisible" width="780px" append-to-body @close="$emit('update:visible', false)">
+  <el-dialog class="gen-dialog" title="操作日志详细" v-model="dialogVisible" width="780px" append-to-body @close="$emit('update:visible', false)">
     <div class="detail-wrap">
       <!-- 基本信息 -->
       <div class="detail-card">
@@ -150,3 +150,47 @@ function copyText(str) {
   }
 }
 </script>
+
+<style scoped>
+.gen-dialog :deep(.el-dialog) {
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(31, 35, 41, 0.14);
+}
+
+.gen-dialog :deep(.el-dialog__header) {
+  margin-right: 0;
+  padding: 18px 22px 10px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.gen-dialog :deep(.el-dialog__title) {
+  color: #1f2329;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.gen-dialog :deep(.el-dialog__body) {
+  padding: 18px 22px 14px;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.dialog-footer :deep(.el-button) {
+  min-width: 88px;
+  height: 34px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.code-action :deep(.el-button) {
+  border-radius: 10px;
+  border-color: #d7e0ea;
+  color: #4f5b6d;
+  background: #fff;
+}
+</style>

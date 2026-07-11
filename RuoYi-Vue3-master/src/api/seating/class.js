@@ -17,6 +17,15 @@ export function getClass(classId) {
   })
 }
 
+// 新学期复制班级
+export function copyClassNewTerm(classId, data) {
+  return request({
+    url: `/seating/class/${classId}/copy-new-term`,
+    method: 'post',
+    data
+  })
+}
+
 // 新增排座班级
 export function addClass(data) {
   return request({

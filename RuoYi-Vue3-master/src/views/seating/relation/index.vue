@@ -1,6 +1,6 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
+  <div class="app-container relation-page">
+    <el-form class="relation-search" :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
       <el-form-item label="班级ID" prop="classId">
         <el-input
           v-model="queryParams.classId"
@@ -42,12 +42,12 @@
         />
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+        <el-button type="primary" plain icon="Search" @click="handleQuery">搜索</el-button>
+        <el-button plain icon="Refresh" @click="resetQuery">重置</el-button>
       </el-form-item>
     </el-form>
 
-    <el-row :gutter="10" class="mb8">
+    <el-row :gutter="10" class="relation-toolbar mb8">
       <el-col :span="1.5">
         <el-button
           type="primary"
@@ -89,20 +89,16 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="relationList" @selection-change="handleSelectionChange">
+    <el-table class="relation-table" v-loading="loading" :data="relationList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="关系ID" align="center" prop="relationId" />
-      <el-table-column label="班级ID" align="center" prop="classId" />
-      <el-table-column label="学生ID" align="center" prop="studentId" />
-      <el-table-column label="关联学生ID" align="center" prop="relatedId" />
       <el-table-column label="关系类型" align="center" prop="relationType" />
       <el-table-column label="关系权重" align="center" prop="relationWeight" />
       <el-table-column label="是否启用" align="center" prop="enabled" />
       <el-table-column label="备注" align="center" prop="remark" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['seating:relation:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['seating:relation:remove']">删除</el-button>
+          <el-button class="row-action-btn" plain type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['seating:relation:edit']">修改</el-button>
+          <el-button class="row-action-btn" plain type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['seating:relation:remove']">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -116,8 +112,8 @@
     />
 
     <!-- 添加或修改排座学生关系约束对话框 -->
-    <el-dialog :title="title" v-model="open" width="500px" append-to-body>
-      <el-form ref="relationRef" :model="form" :rules="rules" label-width="100px">
+    <el-dialog class="relation-dialog" :title="title" v-model="open" width="500px" append-to-body>
+      <el-form class="relation-form" ref="relationRef" :model="form" :rules="rules" label-width="100px">
         <el-row>
           <el-col :span="24">
             <el-form-item label="班级ID" prop="classId">
@@ -153,8 +149,8 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
-          <el-button @click="cancel">取 消</el-button>
+          <el-button @click="cancel">取消</el-button>
+          <el-button type="primary" @click="submitForm">确定</el-button>
         </div>
       </template>
     </el-dialog>
@@ -319,3 +315,287 @@ function handleExport() {
 
 getList()
 </script>
+
+<style scoped>
+.relation-page {
+  min-height: calc(100vh - 84px);
+  padding: 24px 24px 28px;
+  background:
+    radial-gradient(circle at top right, rgba(91, 140, 255, 0.08), transparent 30%),
+    linear-gradient(180deg, #f6f8fc 0%, #f9fbff 42%, #ffffff 100%);
+}
+
+.relation-search,
+.relation-toolbar,
+.relation-table {
+  background: #fff;
+}
+
+.relation-search {
+  padding: 18px 20px 6px;
+  margin-bottom: 16px;
+  border: 1px solid #eef2f8;
+  border-radius: 18px;
+  box-shadow: 0 12px 32px rgba(31, 35, 41, 0.05);
+}
+
+.relation-search :deep(.el-form-item) {
+  margin-right: 16px;
+  margin-bottom: 14px;
+}
+
+.relation-search :deep(.el-form-item__label) {
+  color: #556174;
+  font-weight: 600;
+}
+
+.relation-search :deep(.el-input__wrapper),
+.relation-search :deep(.el-select__wrapper),
+.relation-search :deep(.el-textarea__inner),
+.relation-search :deep(.el-input-number__wrapper) {
+  min-height: 34px;
+  border: 1px solid #d7e0ea;
+  border-radius: 10px;
+  box-shadow: none;
+  background: #fff;
+}
+
+.relation-search :deep(.el-input__wrapper:hover),
+.relation-search :deep(.el-select__wrapper:hover),
+.relation-search :deep(.el-textarea__inner:hover),
+.relation-search :deep(.el-input-number__wrapper:hover) {
+  border-color: #9cb6ff;
+  box-shadow: 0 0 0 1px rgba(90, 140, 255, 0.12);
+}
+
+.relation-search :deep(.el-input.is-focus .el-input__wrapper),
+.relation-search :deep(.el-select__wrapper.is-focused),
+.relation-search :deep(.el-textarea__inner:focus),
+.relation-search :deep(.el-input-number.is-focus .el-input-number__wrapper) {
+  border-color: #5a8cff;
+  box-shadow: 0 0 0 2px rgba(90, 140, 255, 0.12);
+}
+
+.relation-search :deep(.el-input__inner),
+.relation-search :deep(.el-select__selected-item),
+.relation-search :deep(.el-textarea__inner) {
+  color: #243041;
+}
+
+.relation-search :deep(.el-input__inner::placeholder),
+.relation-search :deep(.el-textarea__inner::placeholder) {
+  color: #a2afbf;
+}
+
+.relation-search :deep(.el-button) {
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 10px;
+  box-shadow: none;
+  font-weight: 600;
+}
+
+.relation-search :deep(.el-button--primary) {
+  color: #fff;
+  background: linear-gradient(135deg, #5a8cff 0%, #3e6bf5 100%);
+  border-color: transparent;
+}
+
+.relation-search :deep(.el-button:not(.el-button--primary)) {
+  color: #5f6b7a;
+  background: #fff;
+  border-color: #d8e0eb;
+}
+
+.relation-toolbar {
+  margin-bottom: 0 !important;
+  padding: 14px 18px 10px;
+  border: 1px solid #eef2f8;
+  border-bottom: none;
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 10px 28px rgba(31, 35, 41, 0.05);
+}
+
+.relation-toolbar :deep(.el-button) {
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 10px;
+  box-shadow: none;
+  font-weight: 600;
+}
+
+.relation-toolbar :deep(.el-button--primary.is-plain) {
+  color: #3f6ce8;
+  background: #eef4ff;
+  border-color: #d7e3ff;
+}
+
+.relation-toolbar :deep(.el-button--success.is-plain) {
+  color: #2f9d57;
+  background: #eefaf2;
+  border-color: #d8f1e0;
+}
+
+.relation-toolbar :deep(.el-button--danger.is-plain) {
+  color: #d94b4b;
+  background: #fff1f1;
+  border-color: #ffdada;
+}
+
+.relation-toolbar :deep(.el-button--warning.is-plain) {
+  color: #c98512;
+  background: #fff8eb;
+  border-color: #ffe8bd;
+}
+
+.relation-table {
+  border: 1px solid #eef2f8;
+  border-top: none;
+  border-radius: 0 0 18px 18px;
+  overflow: hidden;
+  box-shadow: 0 18px 40px rgba(31, 35, 41, 0.05);
+}
+
+.relation-table :deep(.el-table__inner-wrapper::before) {
+  display: none;
+}
+
+.relation-table :deep(.el-table__header-wrapper th) {
+  background: #f7f9fc;
+  color: #1f2329;
+  font-weight: 600;
+}
+
+.relation-table :deep(.el-table__cell) {
+  color: #3c4655;
+}
+
+.relation-table :deep(.row-action-btn) {
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.relation-table :deep(.row-action-btn + .row-action-btn) {
+  margin-left: 10px;
+}
+
+.relation-table :deep(.row-action-btn.el-button--primary) {
+  color: #3f6ce8;
+}
+
+.relation-table :deep(.row-action-btn.el-button--danger) {
+  color: #d94b4b;
+}
+
+.relation-table :deep(.row-action-btn.el-button--danger:hover),
+.relation-table :deep(.row-action-btn.el-button--danger:focus) {
+  color: #c92a2a;
+}
+
+.relation-dialog :deep(.el-dialog) {
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(31, 35, 41, 0.14);
+}
+
+.relation-dialog :deep(.el-dialog__header) {
+  margin-right: 0;
+  padding: 18px 22px 10px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.relation-dialog :deep(.el-dialog__title) {
+  color: #1f2329;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.relation-dialog :deep(.el-dialog__body) {
+  padding: 18px 22px 14px;
+}
+
+.relation-dialog :deep(.el-form-item) {
+  margin-bottom: 14px;
+}
+
+.relation-dialog :deep(.el-form-item__label) {
+  color: #4f5b6d;
+  font-weight: 600;
+}
+
+.relation-dialog :deep(.el-input__wrapper),
+.relation-dialog :deep(.el-select__wrapper),
+.relation-dialog :deep(.el-textarea__inner),
+.relation-dialog :deep(.el-input-number__wrapper) {
+  border: 1px solid #d7e0ea;
+  border-radius: 10px;
+  box-shadow: none;
+  background: #fff;
+}
+
+.relation-dialog :deep(.el-input__wrapper:hover),
+.relation-dialog :deep(.el-select__wrapper:hover),
+.relation-dialog :deep(.el-textarea__inner:hover),
+.relation-dialog :deep(.el-input-number__wrapper:hover) {
+  border-color: #9cb6ff;
+  box-shadow: 0 0 0 1px rgba(90, 140, 255, 0.12);
+}
+
+.relation-dialog :deep(.el-input.is-focus .el-input__wrapper),
+.relation-dialog :deep(.el-select__wrapper.is-focused),
+.relation-dialog :deep(.el-textarea__inner:focus),
+.relation-dialog :deep(.el-input-number.is-focus .el-input-number__wrapper) {
+  border-color: #5a8cff;
+  box-shadow: 0 0 0 2px rgba(90, 140, 255, 0.12);
+}
+
+.relation-form :deep(.el-form-item__content) {
+  min-height: 40px;
+}
+
+.relation-dialog :deep(.el-input__inner),
+.relation-dialog :deep(.el-select__selected-item),
+.relation-dialog :deep(.el-textarea__inner) {
+  color: #243041;
+}
+
+.relation-dialog :deep(.el-input__inner::placeholder),
+.relation-dialog :deep(.el-textarea__inner::placeholder) {
+  color: #a2afbf;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.dialog-footer :deep(.el-button) {
+  min-width: 88px;
+  height: 34px;
+  border-radius: 10px;
+}
+
+.dialog-footer :deep(.el-button--primary) {
+  box-shadow: 0 8px 16px rgba(77, 126, 255, 0.18);
+}
+
+@media (max-width: 1200px) {
+  .relation-page {
+    padding: 16px;
+  }
+
+  .relation-search {
+    padding: 16px 16px 4px;
+  }
+
+  .relation-toolbar {
+    padding: 12px 16px 8px;
+  }
+}
+</style>
+
+
+

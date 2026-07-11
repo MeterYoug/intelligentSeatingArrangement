@@ -162,7 +162,7 @@ public class SeatStudentScoreServiceImpl implements ISeatStudentScoreService
                 }
                 catch (Exception e)
                 {
-                    errors.append("<br/>第 ").append(rowNumber).append(" 行：").append(e.getMessage());
+                    errors.append(System.lineSeparator()).append("第 ").append(rowNumber).append(" 行：").append(e.getMessage());
                 }
             }
         }

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="right-board">
     <el-tabs v-model="currentTab" stretch class="center-tabs">
       <el-tab-pane label="组件属性" name="field" />
@@ -234,7 +234,7 @@
               </template>
             </draggable>
             <div>
-              <el-button icon="CirclePlus" style="margin-left: 8px; margin-top: 10px;" text bg type="primary"
+              <el-button icon="CirclePlus" style="margin-left: 8px; margin-top: 10px;" plain type="primary"
                 @click="addSelectItem">
                 添加选项
               </el-button>
@@ -270,7 +270,7 @@
             <el-tree v-if="activeData.dataType === 'static'" draggable :data="activeData.options" node-key="id"
               :expand-on-click-node="false" :render-content="renderContent" />
             <div v-if="activeData.dataType === 'static'">
-              <el-button icon="CirclePlus" style="margin-left: 0; margin-top: 10px;" type="primary" text bg
+              <el-button icon="CirclePlus" style="margin-left: 0; margin-top: 10px;" plain type="primary"
                 @click="addTreeItem">
                 添加父级
               </el-button>
@@ -407,7 +407,7 @@
               </el-form-item>
             </div>
             <div>
-              <el-button icon="CirclePlus" style="margin-left: 0; margin-top: 10px;" type="primary" text bg
+              <el-button icon="CirclePlus" style="margin-left: 0; margin-top: 10px;" plain type="primary"
                 @click="addReg">
                 添加规则
               </el-button>

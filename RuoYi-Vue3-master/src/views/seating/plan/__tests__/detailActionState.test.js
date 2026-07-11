@@ -1,0 +1,143 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { createPlanDetailActionState, getPlanDetailBlockedMessage } from '../detailActionState.js'
+
+test('disables confirm and export when there are unsaved adjustments', () => {
+  const state = createPlanDetailActionState({
+    loading: false,
+    saving: false,
+    confirming: false,
+    dirty: true,
+    undoCount: 1,
+    redoCount: 0,
+    selectedSeatCount: 2,
+    seatCount: 12,
+    planStatus: 'DRAFT'
+  })
+
+  assert.equal(state.saveDisabled, false)
+  assert.equal(state.confirmDisabled, true)
+  assert.equal(state.exportDisabled, true)
+  assert.equal(getPlanDetailBlockedMessage('confirm', state), '请先保存调整后再确认方案')
+  assert.equal(getPlanDetailBlockedMessage('export', state), '请先保存调整后再导出')
+})
+
+test('disables batch actions when no seat is selected', () => {
+  const state = createPlanDetailActionState({
+    loading: false,
+    saving: false,
+    confirming: false,
+    dirty: false,
+    undoCount: 0,
+    redoCount: 0,
+    selectedSeatCount: 0,
+    seatCount: 12,
+    planStatus: 'DRAFT'
+  })
+
+  assert.equal(state.batchLockDisabled, true)
+  assert.equal(state.batchUnlockDisabled, true)
+  assert.equal(getPlanDetailBlockedMessage('batchLock', state), '请先选择座位')
+})
+
+test('locks all high-frequency actions while save is in progress', () => {
+  const state = createPlanDetailActionState({
+    loading: false,
+    saving: true,
+    confirming: false,
+    dirty: true,
+    undoCount: 3,
+    redoCount: 2,
+    selectedSeatCount: 2,
+    seatCount: 12,
+    planStatus: 'DRAFT'
+  })
+
+  assert.equal(state.undoDisabled, true)
+  assert.equal(state.redoDisabled, true)
+  assert.equal(state.selectionToggleDisabled, true)
+  assert.equal(state.batchLockDisabled, true)
+  assert.equal(state.saveDisabled, true)
+  assert.equal(getPlanDetailBlockedMessage('save', state), '正在保存调整，请稍后再试')
+})
+
+test('locks all high-frequency actions while loading', () => {
+  const state = createPlanDetailActionState({
+    loading: true,
+    saving: false,
+    confirming: false,
+    dirty: true,
+    undoCount: 3,
+    redoCount: 2,
+    selectedSeatCount: 2,
+    seatCount: 12,
+    planStatus: 'DRAFT'
+  })
+
+  assert.equal(state.undoDisabled, true)
+  assert.equal(state.redoDisabled, true)
+  assert.equal(state.selectionToggleDisabled, true)
+  assert.equal(state.batchLockDisabled, true)
+  assert.equal(state.batchUnlockDisabled, true)
+  assert.equal(state.saveDisabled, true)
+  assert.equal(state.confirmDisabled, true)
+  assert.equal(state.exportDisabled, true)
+  assert.equal(getPlanDetailBlockedMessage('undo', state), '方案正在加载，请稍后再试')
+})
+
+test('locks all high-frequency actions while confirm is in progress', () => {
+  const state = createPlanDetailActionState({
+    loading: false,
+    saving: false,
+    confirming: true,
+    dirty: false,
+    undoCount: 3,
+    redoCount: 2,
+    selectedSeatCount: 2,
+    seatCount: 12,
+    planStatus: 'DRAFT'
+  })
+
+  assert.equal(state.undoDisabled, true)
+  assert.equal(state.redoDisabled, true)
+  assert.equal(state.selectionToggleDisabled, true)
+  assert.equal(state.batchLockDisabled, true)
+  assert.equal(state.batchUnlockDisabled, true)
+  assert.equal(state.saveDisabled, true)
+  assert.equal(state.confirmDisabled, true)
+  assert.equal(state.exportDisabled, true)
+  assert.equal(getPlanDetailBlockedMessage('confirm', state), '正在确认方案，请稍后再试')
+})
+test('blocks confirm when the plan is already active', () => {
+  const state = createPlanDetailActionState({
+    loading: false,
+    saving: false,
+    confirming: false,
+    dirty: false,
+    undoCount: 0,
+    redoCount: 0,
+    selectedSeatCount: 0,
+    seatCount: 12,
+    planStatus: 'ACTIVE'
+  })
+
+  assert.equal(state.confirmDisabled, true)
+  assert.equal(getPlanDetailBlockedMessage('confirm', state), '当前方案已启用，无需重复确认')
+})
+
+test('blocks export when there is no seat layout', () => {
+  const state = createPlanDetailActionState({
+    loading: false,
+    saving: false,
+    confirming: false,
+    dirty: false,
+    undoCount: 0,
+    redoCount: 0,
+    selectedSeatCount: 0,
+    seatCount: 0,
+    planStatus: 'DRAFT'
+  })
+
+  assert.equal(state.exportDisabled, true)
+  assert.equal(getPlanDetailBlockedMessage('export', state), '暂无座位布局可导出')
+})

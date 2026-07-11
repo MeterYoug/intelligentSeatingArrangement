@@ -1,4 +1,4 @@
-<template>
+﻿<template>
    <div class="app-container">
       <el-form :model="queryParams" ref="queryRef" :inline="true">
          <el-form-item label="登录地址" prop="ipaddr">
@@ -20,8 +20,8 @@
             />
          </el-form-item>
          <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" plain icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button plain icon="Refresh" @click="resetQuery">重置</el-button>
          </el-form-item>
       </el-form>
       <el-table
@@ -48,7 +48,7 @@
          </el-table-column>
          <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
             <template #default="scope">
-               <el-button link type="primary" icon="Delete" @click="handleForceLogout(scope.row)" v-hasPermi="['monitor:online:forceLogout']">强退</el-button>
+               <el-button type="danger" plain class="row-action-btn" icon="Delete" @click="handleForceLogout(scope.row)" v-hasPermi="['monitor:online:forceLogout']">强退</el-button>
             </template>
          </el-table-column>
       </el-table>
@@ -107,3 +107,4 @@ function handleForceLogout(row) {
 
 getList()
 </script>
+

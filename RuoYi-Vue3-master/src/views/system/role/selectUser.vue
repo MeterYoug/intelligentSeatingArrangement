@@ -1,4 +1,4 @@
-<template>
+﻿<template>
    <!-- 授权用户 -->
    <el-dialog title="选择用户" v-model="visible" width="800px" top="5vh" append-to-body>
       <el-form :model="queryParams" ref="queryRef" :inline="true">
@@ -21,8 +21,8 @@
             />
          </el-form-item>
          <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" plain icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button plain icon="Refresh" @click="resetQuery">重置</el-button>
          </el-form-item>
       </el-form>
       <el-row>
@@ -53,8 +53,8 @@
       </el-row>
       <template #footer>
          <div class="dialog-footer">
-            <el-button type="primary" @click="handleSelectUser">确 定</el-button>
-            <el-button @click="visible = false">取 消</el-button>
+            <el-button @click="visible = false">取消</el-button>
+            <el-button type="primary" @click="handleSelectUser">确定</el-button>
          </div>
       </template>
    </el-dialog>
@@ -142,3 +142,4 @@ defineExpose({
   show,
 })
 </script>
+

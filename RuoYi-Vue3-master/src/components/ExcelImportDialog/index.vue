@@ -14,6 +14,12 @@
         </div>
       </template>
     </el-upload>
+    <div v-if="importErrors.length" class="import-error-summary">
+      <el-alert title="导入未完成，文件数据没有写入。请修正以下问题后重新上传。" type="error" :closable="false" show-icon />
+      <ul class="import-error-list">
+        <li v-for="(item, index) in importErrors" :key="index">{{ item }}</li>
+      </ul>
+    </div>
     <template #footer>
       <div class="dialog-footer">
         <el-button type="primary" @click="handleSubmit">确 定</el-button>
@@ -76,6 +82,7 @@ const visible = ref(false)
 const selectedFile = ref(null)
 const isUploading = ref(false)
 const updateSupport = ref(false)
+const importErrors = ref([])
 const headers = { Authorization: 'Bearer ' + getToken() }
 
 const uploadUrl = computed(() => {
@@ -92,6 +99,7 @@ const templateUrl = computed(() => !!props.templateAction)
 function open() {
   updateSupport.value = false
   isUploading.value = false
+  importErrors.value = []
   visible.value = true
   nextTick(() => {
     selectedFile.value = null
@@ -103,6 +111,7 @@ function open() {
 function handleClose() {
   isUploading.value = false
   selectedFile.value = null
+  importErrors.value = []
   uploadRef.value?.clearFiles()
 }
 
@@ -119,6 +128,9 @@ function handleProgress() {
 /** 文件选择处理 */
 const handleFileChange = (file, fileList) => {
   selectedFile.value = file
+  if (file.status === "ready") {
+    importErrors.value = []
+  }
 }
 
 /** 文件删除处理 */
@@ -130,7 +142,7 @@ const handleFileRemove = (file, fileList) => {
 function handleSuccess(response) {
   if (response.code !== 200) {
     isUploading.value = false
-    proxy.$modal.msgError(response.msg || "导入失败，请检查文件内容后重试。")
+    showImportErrors(response?.msg)
     emit('error', response)
     return
   }
@@ -144,9 +156,34 @@ function handleSuccess(response) {
 
 function handleError(error) {
   isUploading.value = false
-  const message = error?.message || "网络异常，请检查服务连接后重试。"
-  proxy.$modal.msgError(`导入失败：${message}`)
+  showImportErrors(readImportError(error))
   emit('error', error)
+}
+
+function showImportErrors(message) {
+  importErrors.value = parseImportErrors(message)
+  proxy.$modal.msgError(importErrors.value[0] || "导入失败，请检查文件内容后重试。")
+}
+
+function readImportError(error) {
+  const response = error?.response || error?.target?.response
+  if (typeof response === "string") {
+    try {
+      return JSON.parse(response).msg || response
+    } catch (e) {
+      return response
+    }
+  }
+  return response?.msg || error?.message || "网络异常，请检查服务连接后重试。"
+}
+
+function parseImportErrors(message) {
+  const text = String(message || "导入失败，请检查文件内容后重试。")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .trim()
+  return text.split(/\r?\n/).map(item => item.trim()).filter(Boolean)
 }
 
 // 提交上传
@@ -164,3 +201,15 @@ function handleSubmit() {
 
 defineExpose({ open })
 </script>
+
+<style scoped>
+.import-error-summary {
+  margin-top: 16px;
+}
+
+.import-error-list {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  line-height: 1.7;
+}
+</style>
