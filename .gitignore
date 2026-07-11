@@ -22,6 +22,9 @@ RuoYi-Vue-springboot3/ruoyi-admin/src/main/resources/application-druid.yml
 *.log
 logs/
 
+# Local database exports
+sql/intelligent_seating_*.sql
+
 # System files
 .DS_Store
 Thumbs.db
