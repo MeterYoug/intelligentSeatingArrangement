@@ -1,13 +1,13 @@
 # 慧排座
 
-本项目是面向老师的 PC Web 智能排座管理系统，基于若依前后端分离版二次开发。当前 MVP 覆盖班级、学生、成绩、教室布局、排座规则、座位方案生成、人工微调和导出流程。
+本项目是面向老师的 PC Web 智能排座管理系统。当前 MVP 覆盖班级、学生、成绩、教室布局、排座规则、座位方案生成、人工微调和导出流程。
 
 ## 目录结构
 
 ```text
 .
-├── RuoYi-Vue-springboot3   后端，若依 Spring Boot 3 多模块工程
-├── RuoYi-Vue3-master       前端，若依 Vue3 + Vite + Element Plus 工程
+├── RuoYi-Vue-springboot3   后端，Spring Boot 3 多模块工程
+├── RuoYi-Vue3-master       前端，Vue3 + Vite + Element Plus 工程
 ├── docs                    设计和进度文档
 └── ROADMAP.md              MVP 路线图和真实进度
 ```
