@@ -1,5 +1,11 @@
 <template>
-  <div class="app-container">
+  <div class="app-container seating-page">
+    <div class="seating-page-heading">
+      <div>
+        <h1>成绩管理</h1>
+        <p>管理考试批次和成绩导入，为排座提供最新等级。</p>
+      </div>
+    </div>
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
       <el-form-item label="班级" prop="classId">
         <el-select v-model="queryParams.classId" placeholder="请选择班级" filterable clearable style="width: 180px">

@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container">
+  <div class="app-container seating-detail-page">
     <el-page-header title="返回" @back="goBack">
       <template #content>
         <span>{{ plan.planName || "座位方案详情" }}</span>
@@ -69,17 +69,32 @@
         <div class="detail-layout">
           <section class="seat-section">
             <div class="section-header">
-              <div class="section-title">座位表</div>
+              <div class="section-heading">
+                <div class="section-title">座位表</div>
+                <div class="section-subtitle">拖拽学生调整座位，锁定后可避免再次误操作。</div>
+              </div>
               <div class="section-actions">
                 <el-radio-group v-model="viewMode" size="small" class="view-toggle">
                   <el-radio-button label="TEACHER">教师视角</el-radio-button>
                   <el-radio-button label="STUDENT">学生视角</el-radio-button>
                 </el-radio-group>
-                <el-button icon="Download" @click="exportSeatTable">导出 Excel</el-button>
-                <el-button icon="Picture" @click="exportSeatImage">导出图片</el-button>
-                <el-button icon="Printer" @click="exportSeatPdf">导出 PDF</el-button>
-                <el-button v-if="plan.planStatus !== 'ACTIVE'" type="success" icon="CircleCheck" :loading="confirming" @click="confirmCurrentPlan">确认方案</el-button>
-                <el-button type="primary" icon="Check" :loading="saving" :disabled="!dirty" @click="saveAssignments">保存调整</el-button>
+                <el-dropdown trigger="click" @command="handleExportCommand">
+                  <el-button class="secondary-action">
+                    导出
+                    <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+                  </el-button>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item command="excel">导出 Excel</el-dropdown-item>
+                      <el-dropdown-item command="image">导出图片</el-dropdown-item>
+                      <el-dropdown-item command="pdf">导出 PDF</el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
+                <div class="action-group">
+                  <el-button v-if="plan.planStatus !== 'ACTIVE'" type="success" plain icon="CircleCheck" :loading="confirming" @click="confirmCurrentPlan">确认方案</el-button>
+                  <el-button type="primary" icon="Check" :loading="saving" :disabled="!dirty" @click="saveAssignments">保存调整</el-button>
+                </div>
               </div>
             </div>
             <div class="classroom-view">
@@ -118,9 +133,8 @@
                             {{ currentAssignment(seat)?.isLocked === "1" ? "已锁定" : "锁定" }}
                           </el-button>
                           <el-button
-                            class="seat-action-button"
+                            class="seat-action-button seat-clear-button"
                             link
-                            type="danger"
                             icon="Close"
                             @click.stop="clearSeat(seat)"
                           >
@@ -141,7 +155,7 @@
           </section>
 
           <section class="score-section">
-            <div class="section-title">未安排学生</div>
+            <div class="side-panel-title">未安排学生</div>
             <div class="unassigned-panel">
               <div v-if="unassignedStudents.length" class="student-pool">
                 <div
@@ -158,12 +172,12 @@
               </div>
               <el-empty v-else description="暂无未安排学生" :image-size="48" />
             </div>
-            <div class="section-title">评分明细</div>
+            <div class="side-panel-title score-title">评分明细</div>
             <el-table :data="scoreList" size="small" border>
-              <el-table-column label="规则" prop="ruleName" min-width="130" show-overflow-tooltip />
-              <el-table-column label="得分" prop="scoreValue" width="80" align="center" />
-              <el-table-column label="扣分" prop="penaltyValue" width="80" align="center" />
-              <el-table-column label="明细" min-width="180" show-overflow-tooltip>
+              <el-table-column label="规则" prop="ruleName" min-width="110" show-overflow-tooltip />
+              <el-table-column label="得分" prop="scoreValue" width="58" align="center" />
+              <el-table-column label="扣分" prop="penaltyValue" width="58" align="center" />
+              <el-table-column label="明细" min-width="140" show-overflow-tooltip>
                 <template #default="scope">{{ formatScoreDetail(scope.row.detailJson) }}</template>
               </el-table-column>
             </el-table>
@@ -175,6 +189,7 @@
 </template>
 
 <script setup name="SeatingPlanDetail">
+import { ArrowDown } from "@element-plus/icons-vue"
 import { getPlan, confirmPlan, exportSeatTableUrl } from "@/api/seating/plan"
 import { listAssignment, savePlanAssignments } from "@/api/seating/assignment"
 import { listScore } from "@/api/seating/score"
@@ -466,6 +481,12 @@ function confirmCurrentPlan() {
   }).finally(() => {
     confirming.value = false
   }).catch(() => {})
+}
+
+function handleExportCommand(command) {
+  if (command === "excel") exportSeatTable()
+  if (command === "image") exportSeatImage()
+  if (command === "pdf") exportSeatPdf()
 }
 
 function exportSeatTable() {
@@ -850,11 +871,21 @@ loadDetail()
 </script>
 
 <style scoped>
+.seating-detail-page {
+  min-height: 100%;
+  padding-top: 16px;
+  background: #f5f7fb;
+}
+
+.seating-detail-page :deep(.el-page-header) {
+  margin-bottom: 16px;
+}
+
 .plan-summary {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 12px;
-  margin: 18px 0;
+  margin: 0 0 16px;
   padding: 14px 16px;
   border: 1px solid #ebeef5;
   border-radius: 6px;
@@ -885,7 +916,7 @@ loadDetail()
 
 .detail-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 420px;
+  grid-template-columns: minmax(0, 1fr) minmax(380px, 440px);
   gap: 16px;
   align-items: start;
 }
@@ -905,10 +936,17 @@ loadDetail()
 
 .section-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 14px;
+}
+
+.section-heading {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .section-title {
@@ -917,16 +955,37 @@ loadDetail()
   font-weight: 600;
 }
 
-.score-section .section-title + .section-title {
-  margin-top: 16px;
+.section-subtitle {
+  color: #909399;
+  font-size: 12px;
+  line-height: 1.5;
 }
+
 
 .section-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   flex-wrap: wrap;
   gap: 8px;
-  flex: 0 0 auto;
+  max-width: 100%;
+  flex: 0 1 auto;
+}
+
+.secondary-action {
+  color: #606266;
+}
+
+.action-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 8px;
+  border-left: 1px solid #ebeef5;
+}
+
+.action-group .el-button {
+  margin-left: 0 !important;
 }
 
 .view-toggle {
@@ -935,6 +994,7 @@ loadDetail()
 
 .classroom-view {
   min-width: 0;
+  overflow: hidden;
 }
 
 .classroom-body {
@@ -944,6 +1004,7 @@ loadDetail()
 }
 
 .classroom-main {
+  min-width: 0;
   max-width: 100%;
   overflow: auto;
   padding-bottom: 4px;
@@ -1069,6 +1130,24 @@ loadDetail()
   margin-left: 0;
 }
 
+.seat-clear-button {
+  color: #909399 !important;
+}
+
+.seat-clear-button:hover {
+  color: #f56c6c !important;
+}
+
+.side-panel-title {
+  color: #303133;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.score-title {
+  margin-top: 18px;
+}
+
 .unassigned-panel {
   margin: 10px 0 16px;
   padding: 10px;
@@ -1114,6 +1193,18 @@ loadDetail()
   font-size: 13px;
 }
 
+.score-section {
+  overflow: hidden;
+}
+
+.score-section :deep(.el-table) {
+  width: 100%;
+}
+
+.score-section :deep(.el-table .cell) {
+  padding: 0 8px;
+}
+
 .platform {
   display: flex;
   align-items: center;
@@ -1141,9 +1232,17 @@ loadDetail()
   letter-spacing: 4px;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1400px) {
   .detail-layout {
     grid-template-columns: 1fr;
+  }
+
+  .section-header {
+    flex-direction: column;
+  }
+
+  .section-actions {
+    justify-content: flex-start;
   }
 }
 </style>

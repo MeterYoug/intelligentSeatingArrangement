@@ -39,7 +39,7 @@
           <template #header>
             <div class="panel-header">
               <span>排座流程</span>
-              <el-tag type="success" effect="plain">MVP 已验证</el-tag>
+              <el-tag type="info" effect="plain">MVP 已验证</el-tag>
             </div>
           </template>
           <el-steps :active="6" finish-status="success" align-center>

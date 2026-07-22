@@ -1,5 +1,11 @@
 <template>
-  <div class="app-container">
+  <div class="app-container seating-page">
+    <div class="seating-page-heading">
+      <div>
+        <h1>学生管理</h1>
+        <p>维护学生排座属性，并支持 Excel 批量导入。</p>
+      </div>
+    </div>
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
       <el-form-item label="班级" prop="classId">
         <el-select
@@ -99,7 +105,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="success"
+          type="info"
           plain
           icon="Edit"
           :disabled="single"
@@ -128,7 +134,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="warning"
+          type="info"
           plain
           icon="Download"
           @click="handleExport"

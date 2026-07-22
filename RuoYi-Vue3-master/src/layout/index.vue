@@ -24,7 +24,9 @@ const settingsStore = useSettingsStore()
 const theme = computed(() => settingsStore.theme)
 const sidebar = computed(() => useAppStore().sidebar)
 const device = computed(() => useAppStore().device)
-const needTagsView = computed(() => settingsStore.tagsView)
+const route = useRoute()
+// 排座页面已经通过侧栏和面包屑提供当前上下文，隐藏重复的多级页签。
+const needTagsView = computed(() => settingsStore.tagsView && !route.path.startsWith('/seating'))
 const fixedHeader = computed(() => settingsStore.fixedHeader)
 
 const classObj = computed(() => ({

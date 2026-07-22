@@ -1,5 +1,11 @@
 <template>
-  <div class="app-container">
+  <div class="app-container seating-page">
+    <div class="seating-page-heading">
+      <div>
+        <h1>班级管理</h1>
+        <p>维护班级、年级、学期和科目，为学生与成绩建立基础数据。</p>
+      </div>
+    </div>
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
       <el-form-item label="班级名称" prop="className">
         <el-input
@@ -65,7 +71,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="success"
+          type="info"
           plain
           icon="Edit"
           :disabled="single"
@@ -85,7 +91,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="warning"
+          type="info"
           plain
           icon="Download"
           @click="handleExport"

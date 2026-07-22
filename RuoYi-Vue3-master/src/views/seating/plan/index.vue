@@ -1,5 +1,11 @@
 <template>
-  <div class="app-container">
+  <div class="app-container seating-page">
+    <div class="seating-page-heading">
+      <div>
+        <h1>座位方案</h1>
+        <p>生成、微调、确认并导出班级座位方案。</p>
+      </div>
+    </div>
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
       <el-form-item label="班级" prop="classId">
         <el-select v-model="queryParams.classId" placeholder="请选择班级" filterable clearable style="width: 180px">
@@ -51,7 +57,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="success"
+          type="info"
           plain
           icon="Edit"
           :disabled="single"
@@ -91,7 +97,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="warning"
+          type="info"
           plain
           icon="Download"
           @click="handleExport"

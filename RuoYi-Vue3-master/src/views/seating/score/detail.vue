@@ -7,7 +7,7 @@
       <template #extra>
         <el-space>
           <el-button icon="Upload" type="primary" plain @click="handleImport" v-hasPermi="['seating:studentScore:import']">导入成绩</el-button>
-          <el-button icon="Download" type="warning" plain @click="handleExport" v-hasPermi="['seating:studentScore:export']">导出成绩</el-button>
+          <el-button icon="Download" type="info" plain @click="handleExport" v-hasPermi="['seating:studentScore:export']">导出成绩</el-button>
           <el-checkbox v-model="exportByStudentNo">按学号排序导出</el-checkbox>
           <el-button icon="Finished" plain :disabled="exam.isCurrent === '1'" @click="handleSetCurrent" v-hasPermi="['seating:exam:edit']">设为当前</el-button>
           <el-button icon="Refresh" plain @click="handleSyncLevel" v-hasPermi="['seating:studentScore:sync']">同步等级</el-button>

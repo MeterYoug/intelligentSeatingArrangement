@@ -177,3 +177,59 @@ aside {
     margin-bottom: 10px;
   }
 }
+
+// 慧排座业务页面层级与表格节奏
+.seating-page {
+  background: #f5f7fb;
+}
+
+.seating-page-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 0 0 18px;
+}
+
+.seating-page-heading h1 {
+  margin: 0;
+  color: #303133;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.seating-page-heading p {
+  margin: 6px 0 0;
+  color: #909399;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.seating-page > .el-form {
+  padding: 14px 16px 2px;
+  margin-bottom: 12px;
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.seating-page > .el-table {
+  min-height: 220px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.seating-page > .mb8 {
+  margin-bottom: 12px;
+}
+
+@media (max-width: 768px) {
+  .seating-page-heading {
+    padding-bottom: 14px;
+  }
+
+  .seating-page > .el-form {
+    padding: 12px 12px 0;
+  }
+}

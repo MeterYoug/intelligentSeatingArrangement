@@ -59,7 +59,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="success"
+          type="info"
           plain
           icon="Edit"
           :disabled="single"
@@ -79,7 +79,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="warning"
+          type="info"
           plain
           icon="Download"
           @click="handleExport"
