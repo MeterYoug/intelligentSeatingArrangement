@@ -107,7 +107,7 @@
                       v-for="seat in displayFlatSeats"
                       :key="seat.rowIndex + '-' + seat.colIndex"
                       class="seat-cell"
-                      :class="seatClass(seat)"
+                      :class="[seatClass(seat), genderSeatClass(seat)]"
                       :draggable="canDrag(seat)"
                       @dragstart="handleDragStart(seat)"
                       @dragend="resetDragging"
@@ -117,7 +117,7 @@
                       <template v-if="seat.seatType === '0' && seat.isAvailable === '1'">
                         <div class="seat-code">{{ seat.seatCode || seat.rowIndex + '-' + seat.colIndex }}</div>
                         <div v-if="currentAssignment(seat)" class="student-name">
-                          <span :class="['gender-tag', genderClass(currentAssignment(seat))]">
+                          <span :class="['gender-tag', genderClass(currentAssignment(seat))]" :title="`性别：${genderLabel(currentAssignment(seat))}`">
                             {{ genderLabel(currentAssignment(seat)) }}
                           </span>
                           <span class="student-text">{{ currentAssignment(seat).studentNameSnapshot }}</span>
@@ -166,14 +166,20 @@
                   @dragstart="handleStudentDragStart(student)"
                   @dragend="resetDragging"
                 >
-                  <span :class="['gender-tag', genderClassByValue(student.gender)]">{{ genderLabelByValue(student.gender) }}</span>
+                  <span :class="['gender-tag', genderClassByValue(student.gender)]" :title="`性别：${genderLabelByValue(student.gender)}`">{{ genderLabelByValue(student.gender) }}</span>
                   <span class="student-chip-name">{{ student.studentName }}</span>
                 </div>
               </div>
               <el-empty v-else description="暂无未安排学生" :image-size="48" />
             </div>
             <div class="side-panel-title score-title">评分明细</div>
-            <el-table :data="scoreList" size="small" border>
+            <el-empty
+              v-if="!scoreList.length"
+              class="score-empty"
+              description="当前方案暂无评分明细，请先配置并启用排座规则。"
+              :image-size="48"
+            />
+            <el-table v-else :data="scoreList" size="small" border>
               <el-table-column label="规则" prop="ruleName" min-width="110" show-overflow-tooltip />
               <el-table-column label="得分" prop="scoreValue" width="58" align="center" />
               <el-table-column label="扣分" prop="penaltyValue" width="58" align="center" />
@@ -183,13 +189,21 @@
             </el-table>
           </section>
         </div>
+        <div v-if="dirty || canUndo || canRedo" class="unsaved-bar" role="status">
+          <span class="unsaved-message">当前有未保存调整</span>
+          <div class="unsaved-actions">
+            <el-button link :disabled="!canUndo" :icon="RefreshLeft" @click="undoAdjustment">撤销</el-button>
+            <el-button link :disabled="!canRedo" :icon="RefreshRight" @click="redoAdjustment">恢复</el-button>
+            <el-button type="primary" :loading="saving" :disabled="!dirty" @click="saveAssignments">保存调整</el-button>
+          </div>
+        </div>
       </template>
     </el-skeleton>
   </div>
 </template>
 
 <script setup name="SeatingPlanDetail">
-import { ArrowDown } from "@element-plus/icons-vue"
+import { ArrowDown, RefreshLeft, RefreshRight } from "@element-plus/icons-vue"
 import { getPlan, confirmPlan, exportSeatTableUrl } from "@/api/seating/plan"
 import { listAssignment, savePlanAssignments } from "@/api/seating/assignment"
 import { listScore } from "@/api/seating/score"
@@ -221,6 +235,8 @@ const scoreList = ref([])
 const adjustResult = ref(null)
 const studentList = ref([])
 const viewMode = ref("TEACHER")
+const historyStack = ref([])
+const redoStack = ref([])
 
 const assignmentMap = computed(() => {
   const map = new Map()
@@ -255,6 +271,31 @@ const gridStyle = computed(() => ({
 const platformPosition = computed(() => plan.value.platformPosition || "FRONT")
 const viewPlatformPosition = computed(() => viewMode.value === "STUDENT" ? reversePlatformPosition(platformPosition.value) : platformPosition.value)
 const viewModeLabel = computed(() => viewMode.value === "STUDENT" ? "学生视角" : "教师视角")
+const canUndo = computed(() => historyStack.value.length > 0)
+const canRedo = computed(() => redoStack.value.length > 0)
+
+function cloneAssignments(items = assignmentList.value) {
+  return items.map(item => ({ ...item }))
+}
+
+function pushHistory() {
+  historyStack.value.push(cloneAssignments())
+  redoStack.value = []
+}
+
+function undoAdjustment() {
+  if (!canUndo.value) return
+  redoStack.value.push(cloneAssignments())
+  assignmentList.value = historyStack.value.pop()
+  markDirty()
+}
+
+function redoAdjustment() {
+  if (!canRedo.value) return
+  historyStack.value.push(cloneAssignments())
+  assignmentList.value = redoStack.value.pop()
+  markDirty()
+}
 
 function optionLabel(options, value) {
   return options.find(item => item.value === value)?.label || "-"
@@ -307,7 +348,7 @@ function genderLabelByValue(gender) {
   if (gender === "1") {
     return "女"
   }
-  return "未知"
+  return "未填"
 }
 
 function genderClass(assignment) {
@@ -322,6 +363,12 @@ function genderClassByValue(gender) {
     return "gender-female"
   }
   return "gender-unknown"
+}
+
+function genderSeatClass(seat) {
+  const assignment = currentAssignment(seat)
+  if (!assignment) return ""
+  return `seat-${genderClassByValue(assignmentGender(assignment))}`
 }
 
 function canDrag(seat) {
@@ -375,6 +422,7 @@ function handleDrop(targetSeat) {
       isLocked: "0",
       assignSource: "MANUAL"
     }
+    pushHistory()
     applySeatToAssignment(assignment, targetSeat)
     assignmentList.value = [...assignmentList.value, assignment]
     markDirty()
@@ -393,6 +441,7 @@ function handleDrop(targetSeat) {
     resetDragging()
     return
   }
+  pushHistory()
   applySeatToAssignment(sourceAssignment, targetSeat)
   if (targetAssignment && sourceSeat) {
     applySeatToAssignment(targetAssignment, sourceSeat)
@@ -414,6 +463,7 @@ function toggleLock(seat) {
   if (!assignment) {
     return
   }
+  pushHistory()
   assignment.isLocked = assignment.isLocked === "1" ? "0" : "1"
   assignmentList.value = [...assignmentList.value]
   markDirty()
@@ -461,6 +511,8 @@ function saveAssignments() {
       proxy.$modal.msgSuccess("保存成功")
     }
     dirty.value = false
+    historyStack.value = []
+    redoStack.value = []
     loadDetail()
   }).finally(() => {
     saving.value = false
@@ -860,6 +912,8 @@ function loadDetail() {
     scoreList.value = scoreResponse.rows || []
     studentList.value = studentResponse.rows || []
     dirty.value = false
+    historyStack.value = []
+    redoStack.value = []
   }).catch(() => {
     loadError.value = true
   }).finally(() => {
@@ -874,7 +928,8 @@ loadDetail()
 .seating-detail-page {
   min-height: 100%;
   padding-top: 16px;
-  background: #f5f7fb;
+  padding-bottom: 72px;
+  background: var(--seating-page-bg);
 }
 
 .seating-detail-page :deep(.el-page-header) {
@@ -887,9 +942,9 @@ loadDetail()
   gap: 12px;
   margin: 0 0 16px;
   padding: 14px 16px;
-  border: 1px solid #ebeef5;
-  border-radius: 6px;
-  background: #ffffff;
+  border: 1px solid var(--seating-border);
+  border-radius: 8px;
+  background: var(--seating-surface);
 }
 
 .summary-item {
@@ -898,7 +953,7 @@ loadDetail()
 
 .summary-label {
   display: block;
-  color: #909399;
+  color: var(--seating-text-secondary);
   font-size: 12px;
   line-height: 18px;
 }
@@ -906,7 +961,7 @@ loadDetail()
 .summary-value {
   display: block;
   margin-top: 4px;
-  color: #303133;
+  color: var(--seating-text);
   font-size: 14px;
   font-weight: 600;
   overflow: hidden;
@@ -916,7 +971,7 @@ loadDetail()
 
 .detail-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(380px, 440px);
+  grid-template-columns: minmax(0, 1fr) 312px;
   gap: 16px;
   align-items: start;
 }
@@ -929,9 +984,9 @@ loadDetail()
 .score-section {
   min-width: 0;
   padding: 16px;
-  border: 1px solid #ebeef5;
-  border-radius: 6px;
-  background: #ffffff;
+  border: 1px solid var(--seating-border);
+  border-radius: 8px;
+  background: var(--seating-surface);
 }
 
 .section-header {
@@ -950,17 +1005,16 @@ loadDetail()
 }
 
 .section-title {
-  color: #303133;
+  color: var(--seating-text);
   font-size: 16px;
   font-weight: 600;
 }
 
 .section-subtitle {
-  color: #909399;
+  color: var(--seating-text-secondary);
   font-size: 12px;
   line-height: 1.5;
 }
-
 
 .section-actions {
   display: flex;
@@ -973,7 +1027,7 @@ loadDetail()
 }
 
 .secondary-action {
-  color: #606266;
+  color: var(--seating-text-secondary);
 }
 
 .action-group {
@@ -981,7 +1035,7 @@ loadDetail()
   align-items: center;
   gap: 8px;
   padding-left: 8px;
-  border-left: 1px solid #ebeef5;
+  border-left: 1px solid var(--seating-border);
 }
 
 .action-group .el-button {
@@ -1018,12 +1072,12 @@ loadDetail()
 .seat-cell {
   width: 100%;
   min-width: 88px;
-  height: 94px;
+  height: 96px;
   padding: 6px;
-  border: 1px solid #dcdfe6;
+  border: 1px solid var(--seating-border);
   border-radius: 6px;
-  background: #ffffff;
-  color: #606266;
+  background: var(--seating-surface);
+  color: var(--seating-text-secondary);
   overflow: hidden;
 }
 
@@ -1032,34 +1086,46 @@ loadDetail()
 }
 
 .seat-assigned {
-  border-color: #409eff;
-  background: #ecf5ff;
+  border-color: var(--seating-primary);
+  background: var(--seating-primary-soft);
 }
 
 .seat-locked {
-  border-color: #e6a23c;
-  background: #fdf6ec;
+  border-color: var(--seating-warning);
+  background: #fcf6ec;
 }
 
 .seat-empty {
   border-style: dashed;
-  background: #ffffff;
+  background: var(--seating-surface);
 }
 
 .seat-disabled {
-  border-color: #f56c6c;
-  background: #fef0f0;
-  color: #f56c6c;
+  border-color: var(--seating-danger);
+  background: #fcefed;
+  color: var(--seating-danger);
 }
 
 .seat-aisle {
-  border-color: #c0c4cc;
-  background: #f4f4f5;
-  color: #909399;
+  border-color: var(--seating-border);
+  background: var(--seating-workspace-bg);
+  color: var(--seating-text-secondary);
+}
+
+.seat-gender-male {
+  box-shadow: inset 3px 0 0 var(--seating-gender-male);
+}
+
+.seat-gender-female {
+  box-shadow: inset 3px 0 0 var(--seating-gender-female);
+}
+
+.seat-gender-unknown {
+  box-shadow: inset 3px 0 0 var(--seating-text-muted);
 }
 
 .seat-code {
-  color: #909399;
+  color: var(--seating-text-secondary);
   font-size: 12px;
   line-height: 16px;
 }
@@ -1069,8 +1135,8 @@ loadDetail()
   align-items: center;
   gap: 4px;
   margin-top: 4px;
-  color: #303133;
-  font-size: 14px;
+  color: var(--seating-text);
+  font-size: 15px;
   font-weight: 600;
   line-height: 18px;
   overflow: hidden;
@@ -1087,29 +1153,33 @@ loadDetail()
 
 .gender-tag {
   flex: 0 0 auto;
-  min-width: 24px;
-  height: 16px;
+  width: 20px;
+  min-width: 20px;
+  height: 18px;
   padding: 0 4px;
-  border-radius: 3px;
+  border-radius: 4px;
   font-size: 11px;
-  font-weight: 500;
-  line-height: 16px;
+  font-weight: 600;
+  line-height: 18px;
   text-align: center;
 }
 
 .gender-male {
-  background: #e8f3ff;
-  color: #1677ff;
+  border: 1px solid rgba(63, 111, 106, 0.24);
+  background: var(--seating-gender-male-soft);
+  color: var(--seating-gender-male);
 }
 
 .gender-female {
-  background: #fff0f6;
-  color: #c41d7f;
+  border: 1px solid rgba(154, 106, 61, 0.24);
+  background: var(--seating-gender-female-soft);
+  color: var(--seating-gender-female);
 }
 
 .gender-unknown {
-  background: #f4f4f5;
-  color: #909399;
+  border: 1px solid var(--seating-border);
+  background: #f2f4f7;
+  color: var(--seating-text-secondary);
 }
 
 .seat-actions {
@@ -1131,15 +1201,15 @@ loadDetail()
 }
 
 .seat-clear-button {
-  color: #909399 !important;
+  color: var(--seating-text-secondary) !important;
 }
 
 .seat-clear-button:hover {
-  color: #f56c6c !important;
+  color: var(--seating-danger) !important;
 }
 
 .side-panel-title {
-  color: #303133;
+  color: var(--seating-text);
   font-size: 15px;
   font-weight: 600;
 }
@@ -1151,9 +1221,9 @@ loadDetail()
 .unassigned-panel {
   margin: 10px 0 16px;
   padding: 10px;
-  border: 1px dashed #dcdfe6;
+  border: 1px dashed var(--seating-border);
   border-radius: 6px;
-  background: #fafafa;
+  background: var(--seating-workspace-bg);
 }
 
 .student-pool {
@@ -1170,10 +1240,10 @@ loadDetail()
   max-width: 180px;
   height: 28px;
   padding: 0 8px;
-  border: 1px solid #dcdfe6;
+  border: 1px solid var(--seating-border);
   border-radius: 4px;
-  background: #ffffff;
-  color: #303133;
+  background: var(--seating-surface);
+  color: var(--seating-text);
   cursor: move;
 }
 
@@ -1197,6 +1267,10 @@ loadDetail()
   overflow: hidden;
 }
 
+.score-empty {
+  padding: 16px 0;
+}
+
 .score-section :deep(.el-table) {
   width: 100%;
 }
@@ -1210,7 +1284,7 @@ loadDetail()
   align-items: center;
   justify-content: center;
   border-radius: 6px;
-  background: #409eff;
+  background: var(--seating-primary);
   color: #ffffff;
   font-weight: 600;
 }
@@ -1232,7 +1306,36 @@ loadDetail()
   letter-spacing: 4px;
 }
 
-@media (max-width: 1400px) {
+.unsaved-bar {
+  position: fixed;
+  left: calc(220px + 16px);
+  right: 16px;
+  bottom: 16px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 16px;
+  border: 1px solid var(--seating-border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 6px 20px rgba(31, 64, 58, 0.12);
+}
+
+.unsaved-message {
+  color: var(--seating-text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.unsaved-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 1120px) {
   .detail-layout {
     grid-template-columns: 1fr;
   }
@@ -1243,6 +1346,12 @@ loadDetail()
 
   .section-actions {
     justify-content: flex-start;
+  }
+}
+
+@media (max-width: 992px) {
+  .unsaved-bar {
+    left: 16px;
   }
 }
 </style>

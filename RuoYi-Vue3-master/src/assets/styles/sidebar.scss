@@ -124,14 +124,14 @@
           content: '';
           position: absolute;
           inset: 0;
-          background-color: var(--current-color-dark-bg, rgba(64, 158, 255, 0.2));
+          background-color: var(--current-color-dark-bg, rgba(44, 148, 134, 0.2));
           pointer-events: none;
           z-index: 1;
         }
       }
 
       .el-sub-menu.is-active > .el-sub-menu__title {
-        color: var(--current-color, #409eff) !important;
+        color: var(--current-color, #2c9486) !important;
       }
 
       .el-menu-item:not(.is-active),
@@ -150,14 +150,14 @@
         }
 
         &:hover::before {
-          background-color: var(--current-color-dark-bg, rgba(64, 158, 255, 0.2));
+          background-color: var(--current-color-dark-bg, rgba(44, 148, 134, 0.2));
         }
       }
     }
     
     // theme-light 浅色主题
     &.theme-light {
-      border-right: 1px solid #e8eaf0;
+      border-right: 1px solid #E3E8E6;
       box-shadow: none;
 
       .el-menu-item,
@@ -166,36 +166,36 @@
       }
 
       .el-menu-item.is-active {
-        color: var(--current-color, #409eff) !important;
+        color: var(--current-color, #2c9486) !important;
         position: relative;
 
         &::before {
           content: '';
           position: absolute;
           inset: 0;
-          background-color: var(--current-color-light, #ecf5ff);
+          background-color: var(--current-color-light, #EAF4F3);
           pointer-events: none;
           z-index: 1;
         }
       }
 
       .el-sub-menu.is-active > .el-sub-menu__title {
-        color: var(--current-color, #409eff) !important;
+        color: var(--current-color, #2c9486) !important;
       }
 
       .el-menu-item:not(.is-active):hover,
       .submenu-title-noDropdown:hover,
       .el-sub-menu__title:hover {
-        background-color: #f5f7fa;
+        background-color: #EAF4F3;
         color: rgba(0, 0, 0, 0.85) !important;
       }
 
       .nest-menu .el-sub-menu > .el-sub-menu__title,
       .el-sub-menu .el-menu-item {
-        background-color: #fafafa;
+        background-color: #F7FAF9;
 
         &:hover {
-          background-color: #f0f5ff;
+          background-color: #EAF4F3;
         }
       }
     }

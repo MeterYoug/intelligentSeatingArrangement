@@ -10,33 +10,33 @@ $panGreen: #30B08F;
 
 // 默认主题变量
 $menuText: #bfcbd9;
-$menuActiveText: #409eff;
-$menuBg: #1a1f2e;
-$menuHover: #263445;
+$menuActiveText: #2C9486;
+$menuBg: #1d2b2a;
+$menuHover: #263b38;
 
-// 浅色主题theme-light
+// 浅色主题theme-light（方案A：白底 + 淡青绿）
 $menuLightBg: #ffffff;
-$menuLightHover: #f0f1f5;
+$menuLightHover: #EAF4F3;
 $menuLightText: #303133;
-$menuLightActiveText: #409EFF;
+$menuLightActiveText: #2C9486;
 
 // 基础变量
-$base-sidebar-width: 200px;
-$sideBarWidth: 200px;
+$base-sidebar-width: 220px;
+$sideBarWidth: 220px;
 
 // 菜单暗色变量
 $base-menu-color: rgba(255,255,255,.65);
 $base-menu-color-active: #ffffff;
-$base-menu-background: #1a1f2e;
+$base-menu-background: #1d2b2a;
 $base-sub-menu-background: #141824;
 $base-sub-menu-hover: rgba(255,255,255,.06);
 
 // 组件变量
-$--color-primary: #409EFF;
-$--color-success: #67C23A;
-$--color-warning: #E6A23C;
-$--color-danger: #F56C6C;
-$--color-info: #909399;
+$--color-primary: #2C9486;
+$--color-success: #2F7D5B;
+$--color-warning: #B7791F;
+$--color-danger: #C2413B;
+$--color-info: #356AA0;
 
 :export {
   menuText: $menuText;
@@ -67,6 +67,24 @@ $--color-info: #909399;
 
 // CSS变量定义
 :root {
+  --seating-primary: #2C9486;
+  --seating-primary-hover: #6BB4AA;
+  --seating-primary-soft: #EAF4F3;
+  --seating-primary-active: #23766B;
+  --seating-page-bg: #F4F7F6;
+  --seating-workspace-bg: #EEF3F1;
+  --seating-surface: #FFFFFF;
+  --seating-text: #1F2937;
+  --seating-text-secondary: #667085;
+  --seating-text-muted: #98A2B3;
+  --seating-border: #DDE5E2;
+  --seating-success: #2F7D5B;
+  --seating-warning: #B7791F;
+  --seating-danger: #C2413B;
+  --seating-gender-male: #3F6F6A;
+  --seating-gender-male-soft: #EAF3F1;
+  --seating-gender-female: #9A6A3D;
+  --seating-gender-female-soft: #F8F0E6;
   /* 亮色模式变量 */
   --sidebar-bg: #{$menuBg};
   --sidebar-text: #{$menuText};

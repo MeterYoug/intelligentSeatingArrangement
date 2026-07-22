@@ -5,11 +5,12 @@
         <p class="eyebrow">慧排座工作台</p>
         <h1>老师日常排座与成绩管理</h1>
         <p class="overview-text">
-          围绕班级、学生、成绩、教室布局、排座规则和座位方案完成一套闭环管理。
+          先确认当前班级的数据准备情况，再生成、调整并导出座位方案。
         </p>
+        <div class="task-hint">当前状态：完成数据准备后即可开始排座</div>
       </div>
       <div class="overview-actions">
-        <el-button type="primary" :icon="Grid" @click="goPage('/seating/plan')">生成座位方案</el-button>
+        <el-button type="primary" :icon="Grid" @click="goPage('/seating/plan')">开始一次排座</el-button>
         <el-button :icon="Upload" @click="goPage('/seating/student')">导入学生</el-button>
         <el-button :icon="DataAnalysis" @click="goPage('/seating/score')">管理成绩</el-button>
       </div>
@@ -39,10 +40,10 @@
           <template #header>
             <div class="panel-header">
               <span>排座流程</span>
-              <el-tag type="info" effect="plain">MVP 已验证</el-tag>
+              <el-tag type="warning" effect="plain">待确认数据</el-tag>
             </div>
           </template>
-          <el-steps :active="6" finish-status="success" align-center>
+          <el-steps :active="0" finish-status="success" align-center>
             <el-step title="班级" description="学段、年级、科目" />
             <el-step title="学生" description="导入基础信息" />
             <el-step title="成绩" description="导入并同步等级" />
@@ -137,10 +138,10 @@ const moduleCards = [
 ]
 
 const todoItems = [
-  "先确认班级、学生和教室布局数据完整",
-  "导入成绩后同步等级，再生成新方案",
-  "确认方案前检查评分明细和未安排学生",
-  "确认方案后按需导出 Excel、图片或 PDF"
+  "检查班级、学生和教室布局是否完整",
+  "导入成绩并同步等级后再生成方案",
+  "检查评分明细和未安排学生",
+  "确认方案后导出 Excel、图片或 PDF"
 ]
 
 function goPage(path) {
@@ -152,8 +153,8 @@ function goPage(path) {
 .dashboard-page {
   min-height: calc(100vh - 84px);
   padding: 18px;
-  background: #f5f7fb;
-  color: #1f2d3d;
+  background: var(--seating-page-bg);
+  color: var(--seating-text);
 }
 
 .overview-band {
@@ -170,7 +171,7 @@ function goPage(path) {
 
 .eyebrow {
   margin: 0 0 8px;
-  color: #409eff;
+  color: var(--seating-primary);
   font-size: 13px;
   font-weight: 600;
 }
@@ -184,9 +185,22 @@ h1 {
 
 .overview-text {
   margin: 10px 0 0;
-  color: #606266;
+  color: var(--seating-text-secondary);
   font-size: 14px;
   line-height: 1.7;
+}
+
+.task-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin-top: 14px;
+  border: 1px solid var(--seating-border);
+  border-radius: 6px;
+  background: var(--seating-primary-soft);
+  color: var(--seating-primary-hover);
+  font-size: 13px;
 }
 
 .overview-actions {
@@ -218,9 +232,9 @@ h1 {
 }
 
 .module-card:hover {
-  border-color: #409eff;
-  box-shadow: 0 8px 24px rgba(31, 45, 61, 0.08);
-  transform: translateY(-1px);
+  border-color: var(--seating-primary);
+  box-shadow: 0 4px 12px rgba(31, 64, 58, 0.08);
+
 }
 
 .module-icon {
@@ -231,8 +245,8 @@ h1 {
   height: 42px;
   flex: 0 0 42px;
   border-radius: 8px;
-  background: #ecf5ff;
-  color: #409eff;
+  background: var(--seating-primary-soft);
+  color: var(--seating-primary);
   font-size: 22px;
 }
 
@@ -244,13 +258,13 @@ h1 {
 }
 
 .module-content strong {
-  color: #303133;
+  color: var(--seating-text);
   font-size: 16px;
   font-weight: 700;
 }
 
 .module-content small {
-  color: #606266;
+  color: var(--seating-text-secondary);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -285,18 +299,18 @@ h1 {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  color: #606266;
+  color: var(--seating-text-secondary);
   line-height: 1.6;
 }
 
 .todo-list .el-icon {
   margin-top: 3px;
-  color: #67c23a;
+  color: var(--seating-success);
 }
 
 .compact-panel p {
   margin: 0;
-  color: #606266;
+  color: var(--seating-text-secondary);
   line-height: 1.8;
 }
 

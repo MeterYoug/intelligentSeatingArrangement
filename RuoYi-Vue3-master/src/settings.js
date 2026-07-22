@@ -6,8 +6,9 @@ export default {
 
   /**
    * 侧边栏主题 深色主题theme-dark，浅色主题theme-light
+   * 默认使用浅色主题：白底 + 淡青绿高亮，与品牌主色更协调
    */
-  sideTheme: 'theme-dark',
+  sideTheme: 'theme-light',
 
   /**
    * 是否系统布局配置
